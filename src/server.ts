@@ -1,8 +1,7 @@
-import { KafkaConsumer } from "./modules/core/infra/adapter";
-
+import { initKakfaConsumers } from './deps';
 const main = async () => {
-    const consumer = new KafkaConsumer();
-    await consumer.start();
-  };
-  
+  const { ordersConsumer } = await initKakfaConsumers();
+  await ordersConsumer.start();
+};
+
 main().catch(console.error);
