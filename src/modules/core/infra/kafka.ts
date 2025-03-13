@@ -1,20 +1,16 @@
-import { Consumer, Kafka } from "kafkajs";
-
-import dotenv from "dotenv";
-
-dotenv.config();
+import { Consumer, Kafka } from 'kafkajs';
 
 export class KafkaClient {
   private kafka: Kafka;
   private consumer: Consumer;
 
-  constructor() {
+  constructor(brokers: string[], groupId: string) {
     this.kafka = new Kafka({
-      clientId: "sri-integrator",
-      brokers: [process.env.KAFKA_BROKER || "localhost:9092"],
+      clientId: 'sri-integrator',
+      brokers,
     });
 
-    this.consumer = this.kafka.consumer({ groupId: "sri-integrator" });
+    this.consumer = this.kafka.consumer({ groupId });
   }
 
   async connect() {
