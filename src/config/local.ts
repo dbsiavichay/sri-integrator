@@ -2,8 +2,8 @@ import { AppConfig } from './index';
 
 export default {
   externalServices: {
-    service: {
-      host: 'localhost',
+    core: {
+      host: 'http://localhost:8000',
       timeout: 1000,
     },
   },

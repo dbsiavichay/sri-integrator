@@ -23,6 +23,8 @@ export default [
       ...js.configs.recommended.rules,
       ...tsPlugin.configs.recommended.rules,
       'prettier/prettier': 'error',
+      'no-dupe-class-members': 'off',
+      '@typescript-eslint/no-dupe-class-members': 'error',
     },
   },
   prettierConfig,

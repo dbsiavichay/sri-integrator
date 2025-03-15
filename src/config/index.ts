@@ -2,7 +2,7 @@ import { Endpoint } from '#/modules/core/domain/types';
 
 export interface AppConfig {
   externalServices: {
-    service: Endpoint;
+    core: Endpoint;
   };
   kafka: {
     brokers: string[];
