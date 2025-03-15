@@ -1,14 +1,11 @@
-import { MessageService } from './service';
+import { CorePort } from '../domain/ports';
+import { OrderEvent } from '../domain/models';
 
 export class HandleMessage {
-  private messageService: MessageService;
+  constructor(private corePort: CorePort) {}
 
-  constructor() {
-    this.messageService = new MessageService();
-  }
-
-  async execute(rawMessage: string) {
-    const message = this.messageService.processMessage(rawMessage);
-    console.log('Processed Message:', message.content);
+  async execute(message: OrderEvent) {
+    const invoice = await this.corePort.retrieveInvoice(message.id);
+    console.log('Processed Message:', invoice);
   }
 }
