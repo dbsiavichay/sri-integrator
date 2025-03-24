@@ -22,6 +22,20 @@ export class Product {
   // Aquí podrías incluir métodos o validaciones específicas del negocio.
 }
 
+export class Customer {
+  constructor(
+    public id: number,
+    public code: string,
+    public firstName: string | null,
+    public lastName: string | null,
+    public bussinessName: string,
+    public address: string | null,
+    public phone: string | null,
+    public email: string,
+    public codeType: string,
+  ) {}
+}
+
 // Dominio: Línea de venta o detalle
 export class Line {
   constructor(
@@ -82,7 +96,7 @@ export class Invoice {
     public status: string,
     public file: any | null,
     public errors: Record<string, any>,
-    public customer: number,
+    public customer: Customer,
   ) {}
 }
 

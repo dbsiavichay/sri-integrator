@@ -18,8 +18,9 @@ export class KafkaConsumer {
   async start() {
     await this.kafkaClient.connect();
 
-    await this.kafkaClient.subscribe(this.topic, async (message) => {
-      const orderEvent = this.mapper.transform(message as OrderEventDTO);
+    await this.kafkaClient.subscribe(this.topic, async (message: string) => {
+      const data = JSON.parse(message) as OrderEventDTO;
+      const orderEvent = this.mapper.transform(data);
       await this.handleMessage.execute(orderEvent);
     });
   }

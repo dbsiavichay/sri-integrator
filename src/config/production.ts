@@ -11,5 +11,6 @@ export default {
     brokers: ['localhost:29092'],
     groupId: 'sri-integrator',
   },
+  timezone: 'America/Guayaquil',
   environment: 'production',
 } as AppConfig;

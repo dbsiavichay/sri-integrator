@@ -8,6 +8,7 @@ export interface AppConfig {
     brokers: string[];
     groupId: string;
   };
+  timezone: string;
   environment: string;
 }
 
