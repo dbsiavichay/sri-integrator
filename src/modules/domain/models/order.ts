@@ -1,4 +1,3 @@
-// Dominio: Producto
 export class Product {
   constructor(
     public id: number,
@@ -18,8 +17,6 @@ export class Product {
     public provider: any | null,
     public taxes: number[],
   ) {}
-
-  // Aquí podrías incluir métodos o validaciones específicas del negocio.
 }
 
 export class Customer {
@@ -36,7 +33,6 @@ export class Customer {
   ) {}
 }
 
-// Dominio: Línea de venta o detalle
 export class Line {
   constructor(
     public id: number,
@@ -49,7 +45,6 @@ export class Line {
   ) {}
 }
 
-// Dominio: Pago
 export class Payment {
   constructor(
     public id: number,
@@ -58,7 +53,6 @@ export class Payment {
   ) {}
 }
 
-// Dominio: Configuración SRI
 export class SriConfig {
   constructor(
     public companyCode: string,
@@ -73,11 +67,11 @@ export class SriConfig {
     public companyAccountingRequired: boolean,
     public environment: string,
     public emissionType: string,
+    public signature: string,
   ) {}
 }
 
-// Dominio: Documento o Factura
-export class Invoice {
+export class Order {
   constructor(
     public id: number,
     public lines: Line[],
@@ -97,13 +91,5 @@ export class Invoice {
     public file: any | null,
     public errors: Record<string, any>,
     public customer: Customer,
-  ) {}
-}
-
-export class OrderEvent {
-  constructor(
-    public id: number,
-    public accessCode: string,
-    public sequence: string,
   ) {}
 }

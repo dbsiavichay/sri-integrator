@@ -58,13 +58,14 @@ interface SriConfig {
   companyAccountingRequired: boolean;
   environment: string;
   emissionType: string;
+  signature: string;
 }
 
 interface Errors {
   [key: string]: unknown;
 }
 
-export interface InvoiceDTO {
+export interface OrderDTO {
   id: number;
   customer: Customer;
   lines: Line[];
@@ -89,4 +90,11 @@ export interface OrderEventDTO {
   id: number;
   access_code: string;
   sequence: string;
+}
+
+export interface InvoiceMessageDTO {
+  id: number;
+  orderId: number;
+  status: string;
+  signatureId: string;
 }
