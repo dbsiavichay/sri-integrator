@@ -19,6 +19,18 @@ const ProductSchema = z.object({
   taxes: z.array(z.number()),
 });
 
+const CustomerSchema = z.object({
+  id: z.number(),
+  code: z.string().max(16),
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+  bussinessName: z.string().max(128),
+  address: z.string().nullable(),
+  phone: z.string().max(16).nullable(),
+  email: z.string().email(),
+  codeType: z.string(),
+});
+
 const InvoiceLineSchema = z.object({
   id: z.number(),
   product: ProductSchema,
@@ -68,7 +80,7 @@ export const InvoiceSchema = z.object({
   status: z.string(),
   file: z.any().nullable(),
   errors: z.record(z.any()),
-  customer: z.number(),
+  customer: CustomerSchema,
 });
 
 export const OrderEventSchema = z.object({

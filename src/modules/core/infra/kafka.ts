@@ -17,15 +17,14 @@ export class KafkaClient {
     await this.consumer.connect();
   }
 
-  async subscribe(topic: string, callback: (message: object) => Promise<void>) {
+  async subscribe(topic: string, callback: (message: string) => Promise<void>) {
     await this.consumer.subscribe({ topic, fromBeginning: true });
 
     await this.consumer.run({
       eachMessage: async ({ message }) => {
         if (message.value) {
-          const value = JSON.parse(message.value.toString());
-          console.log(`Kafka Message: ${value}`);
-          await callback(value);
+          console.log(`Kafka Message: ${message.value}`);
+          await callback(message.value);
         }
       },
     });

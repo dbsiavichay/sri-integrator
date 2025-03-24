@@ -1,4 +1,4 @@
-import { Invoice, Line, OrderEvent, Payment, Product, SriConfig } from '../domain/models';
+import { Customer, Invoice, Line, OrderEvent, Payment, Product, SriConfig } from '../domain/models';
 import { InvoiceDTO, OrderEventDTO } from '../app/dtos';
 import { InvoiceSchema, OrderEventSchema } from './schemas';
 
@@ -20,10 +20,21 @@ export class InvoiceMapper extends BaseMapper<InvoiceDTO, Invoice> {
   protected map(dto: InvoiceDTO): Invoice {
     const parsedInput = InvoiceSchema.safeParse(dto);
     if (!parsedInput.success) {
-      console.log(dto, parsedInput.error.errors);
+      console.log(`ERRORS: ${parsedInput.error.stack}`);
       throw new Error(parsedInput.error.errors.join(', '));
     }
     const invoiceInput = parsedInput.data;
+    const customer = new Customer(
+      invoiceInput.customer.id,
+      invoiceInput.customer.code,
+      invoiceInput.customer.firstName,
+      invoiceInput.customer.lastName,
+      invoiceInput.customer.bussinessName,
+      invoiceInput.customer.address,
+      invoiceInput.customer.phone,
+      invoiceInput.customer.email,
+      invoiceInput.customer.codeType,
+    );
     const lines = invoiceInput.lines.map(
       (invoiceLineInput) =>
         new Line(
@@ -91,7 +102,7 @@ export class InvoiceMapper extends BaseMapper<InvoiceDTO, Invoice> {
       invoiceInput.status,
       invoiceInput.file,
       invoiceInput.errors,
-      invoiceInput.customer,
+      customer,
     );
   }
 }
@@ -100,7 +111,6 @@ export class OrderEventMapper extends BaseMapper<OrderEventDTO, OrderEvent> {
   protected map(dto: OrderEventDTO): OrderEvent {
     const parsedInput = OrderEventSchema.safeParse(dto);
     if (!parsedInput.success) {
-      console.log(parsedInput.error.errors);
       throw new Error(parsedInput.error.errors.join(', '));
     }
 

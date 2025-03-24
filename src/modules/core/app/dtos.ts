@@ -1,3 +1,15 @@
+interface Customer {
+  id: number;
+  code: string;
+  firstName: string | null;
+  lastName: string | null;
+  bussinessName: string;
+  address: string | null;
+  phone: string | null;
+  email: string;
+  codeType: string;
+}
+
 interface Product {
   id: number;
   code: string;
@@ -54,6 +66,7 @@ interface Errors {
 
 export interface InvoiceDTO {
   id: number;
+  customer: Customer;
   lines: Line[];
   payments: Payment[];
   sriConfig: SriConfig;
@@ -70,7 +83,6 @@ export interface InvoiceDTO {
   status: string;
   file: unknown | null;
   errors: Errors;
-  customer: number;
 }
 
 export interface OrderEventDTO {
