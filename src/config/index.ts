@@ -1,12 +1,21 @@
-import { Endpoint } from '#/modules/core/domain/types';
+import { Endpoint } from '#/modules/domain/types';
 
 export interface AppConfig {
   externalServices: {
     core: Endpoint;
+    sealify: Endpoint;
   };
   kafka: {
     brokers: string[];
     groupId: string;
+  };
+  aws: {
+    region: string;
+    dynamoDb: {
+      tables: {
+        invoices: string;
+      };
+    };
   };
   timezone: string;
   environment: string;

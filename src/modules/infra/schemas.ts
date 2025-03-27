@@ -31,7 +31,7 @@ const CustomerSchema = z.object({
   codeType: z.string(),
 });
 
-const InvoiceLineSchema = z.object({
+const OrderLineSchema = z.object({
   id: z.number(),
   product: ProductSchema,
   quantity: z.number(),
@@ -60,11 +60,12 @@ const ConfigSchema = z.object({
   companyAccountingRequired: z.boolean(),
   environment: z.string(),
   emissionType: z.string(),
+  signature: z.string(),
 });
 
-export const InvoiceSchema = z.object({
+export const OrderSchema = z.object({
   id: z.number(),
-  lines: z.array(InvoiceLineSchema),
+  lines: z.array(OrderLineSchema),
   payments: z.array(PaymentSchema),
   sriConfig: ConfigSchema,
   date: z.string(),
@@ -87,4 +88,10 @@ export const OrderEventSchema = z.object({
   id: z.number(),
   access_code: z.string(),
   sequence: z.string(),
+});
+
+export const InvoiceMessageSchema = z.object({
+  id: z.string(),
+  orderId: z.string(),
+  status: z.string(),
 });

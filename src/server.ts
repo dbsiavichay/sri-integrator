@@ -1,7 +1,7 @@
 import { initKakfaConsumers } from './deps';
 const main = async () => {
-  const { ordersConsumer } = await initKakfaConsumers();
-  await ordersConsumer.start();
+  const { kakfaConsumer } = await initKakfaConsumers();
+  await kakfaConsumer.start();
 };
 
 main().catch(console.error);

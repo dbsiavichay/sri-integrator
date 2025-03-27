@@ -16,6 +16,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.774.0",
+    "@aws-sdk/lib-dynamodb": "^3.774.0",
     "axios": "^1.8.2",
     "kafkajs": "^2.2.4",
     "luxon": "^3.5.0",
@@ -23,6 +25,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@aws-sdk/types": "^3.734.0",
     "@eslint/js": "^9.22.0",
     "@types/luxon": "^3.4.2",
     "@types/node": "^22.13.10",

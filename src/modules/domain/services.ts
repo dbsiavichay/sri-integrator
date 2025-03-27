@@ -1,52 +1,52 @@
 import { DateTime } from 'luxon';
-import { Invoice } from './models';
+import { Order } from './models';
 import { create } from 'xmlbuilder2';
 
 export class GenerateVoucherXmlService {
   constructor(private timeZone: string) {}
 
-  private getData(invoice: Invoice): any {
-    const adjustedVoucherDate = DateTime.fromJSDate(invoice.date).setZone(this.timeZone).toJSDate();
-    const customer = invoice.customer;
-    const payments = invoice.payments;
-    const lines = invoice.lines;
+  private getData(order: Order): any {
+    const adjustedVoucherDate = DateTime.fromJSDate(order.date).setZone(this.timeZone).toJSDate();
+    const customer = order.customer;
+    const payments = order.payments;
+    const lines = order.lines;
 
     const data = {
       factura: {
         '@id': 'comprobante',
         '@version': '1.0.0',
         infoTributaria: {
-          ambiente: invoice.sriConfig.environment,
-          tipoEmision: invoice.sriConfig.emissionType,
-          razonSocial: invoice.sriConfig.companyName,
-          nombreComercial: invoice.sriConfig.companyTradeName,
-          ruc: invoice.sriConfig.companyCode,
-          claveAcceso: invoice.accessCode,
-          codDoc: invoice.voucherTypeCode,
-          estab: invoice.companyBranchCode,
-          ptoEmi: invoice.companySalePointCode,
-          secuencial: invoice.sequence,
-          dirMatriz: invoice.sriConfig.companyMainAddress,
+          ambiente: order.sriConfig.environment,
+          tipoEmision: order.sriConfig.emissionType,
+          razonSocial: order.sriConfig.companyName,
+          nombreComercial: order.sriConfig.companyTradeName,
+          ruc: order.sriConfig.companyCode,
+          claveAcceso: order.accessCode,
+          codDoc: order.voucherTypeCode,
+          estab: order.companyBranchCode,
+          ptoEmi: order.companySalePointCode,
+          secuencial: order.sequence,
+          dirMatriz: order.sriConfig.companyMainAddress,
         },
         infoFactura: {
           fechaEmision: adjustedVoucherDate.toISOString().substr(0, 10),
-          dirEstablecimiento: invoice.sriConfig.companyBranchAddress,
-          obligadoContabilidad: invoice.sriConfig.companyAccountingRequired ? 'SI' : 'NO',
-          tipoIdentificacionComprador: invoice.customer.codeType,
-          razonSocialComprador: invoice.customer.bussinessName,
-          identificacionComprador: invoice.customer.code,
-          totalSinImpuestos: invoice.subtotal,
+          dirEstablecimiento: order.sriConfig.companyBranchAddress,
+          obligadoContabilidad: order.sriConfig.companyAccountingRequired ? 'SI' : 'NO',
+          tipoIdentificacionComprador: order.customer.codeType,
+          razonSocialComprador: order.customer.bussinessName,
+          identificacionComprador: order.customer.code,
+          totalSinImpuestos: order.subtotal,
           totalDescuento: 0,
           totalConImpuestos: [
             {
               codigo: 2,
               codigoPorcentaje: 4,
-              baseImponible: invoice.subtotal,
-              valor: invoice.tax,
+              baseImponible: order.subtotal,
+              valor: order.tax,
             },
           ],
           propina: 0,
-          importeTotal: invoice.total,
+          importeTotal: order.total,
           moneda: 'DOLAR',
           pagos: { pago: [] as any[] },
         },
@@ -110,8 +110,8 @@ export class GenerateVoucherXmlService {
     return data;
   }
 
-  public generate(invoice: Invoice): string {
-    const data = this.getData(invoice);
+  public generate(order: Order): string {
+    const data = this.getData(order);
     const xml = create(data).end({ prettyPrint: true });
     return xml;
   }
