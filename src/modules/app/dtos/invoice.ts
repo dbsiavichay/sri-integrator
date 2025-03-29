@@ -7,9 +7,7 @@ export interface InvoiceDTO {
   xml: string;
   statusHistory: {
     name: string;
-    date: string;
+    statusDate: string;
     description?: string;
   }[];
-  signedXml?: string | null;
-  authorizedXml?: string | null;
 }

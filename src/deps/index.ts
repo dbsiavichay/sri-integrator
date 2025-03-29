@@ -1,26 +1,36 @@
-import {
-  AuthorizationVoucherMapper,
-  InvoiceMapper,
-  InvoiceMessageMapper,
-  OrderEventMapper,
-  OrderMapper,
-  ValidationVoucherMapper,
-} from '#/modules/infra/mappers';
+import 'reflect-metadata';
+import '../modules/app/mappers/core';
+import '../modules/app/mappers/sri';
+import '../modules/app/mappers/invoice';
+import '../modules/app/mappers/message';
+
+import { AuthorizationVoucherMapper, ValidationVoucherMapper } from '../modules/app/mappers/sri';
 import {
   CoreAdapter,
   KafkaConsumer,
   KafkaProducer,
   SealifyAdapter,
-  SriAdapter,
+  SriAuthorizationAdapter,
+  SriValidationAdapter,
 } from '#/modules/infra/adapter';
-import { ProcessInvoiceMessage, ProcessOrderEventMessage } from '#/modules/app/usecase';
+import { InvoiceMessageMapper, OrderMessageMapper } from '../modules/app/mappers/message';
+import {
+  InvoiceMessageSchema,
+  OrderMessageSchema,
+  OrderResponseSchema,
+  SealInvoiceResponseSchema,
+} from '#/modules/infra/validators';
+import { ProcessInvoiceMessage, ProcessOrderMessage } from '#/modules/app/usecase';
 
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { DynamoInvoiceRepository } from '#/modules/infra/repositories';
 import { GenerateVoucherXmlService } from '#/modules/domain/services';
+import { InvoiceMapper } from '../modules/app/mappers/invoice';
 import { KAFKA_TOPICS } from './enums';
 import { Kafka } from 'kafkajs';
+import { MapperFactory } from '#/modules/app/mappers/factory';
+import { OrderMapper } from '#/modules/app/mappers/core';
 import { SoapClient } from '#/modules/infra/soap';
 import loadConfig from '#/config';
 
@@ -44,21 +54,32 @@ export async function initKakfaConsumers() {
   // Domain services
   const generateVoucherXmlService = new GenerateVoucherXmlService(config.timezone);
 
-  // Mappers
-  const orderEventMapper = new OrderEventMapper();
-  const orderMapper = new OrderMapper();
-  const invoiceMessageMapper = new InvoiceMessageMapper();
-  const validationVoucherMapper = new ValidationVoucherMapper();
-  const authorizationVoucherMapper = new AuthorizationVoucherMapper();
-  const invoiceMapper = new InvoiceMapper();
+  // Asegurarse que el MapperFactory se inicialice después de que los decoradores se hayan ejecutado
+  const mapperFactory = MapperFactory.getInstance();
+
+  // Obtener el mapper después de que todo esté registrado
+  const orderMessageMapper = mapperFactory.get<OrderMessageMapper>('orderMessage');
+  const invoiceMessageMapper = mapperFactory.get<InvoiceMessageMapper>('invoiceMessage');
+  const orderMapper = mapperFactory.get<OrderMapper>('order');
+  const validationVoucherMapper = mapperFactory.get<ValidationVoucherMapper>('validationVoucher');
+  const authorizationVoucherMapper =
+    mapperFactory.get<AuthorizationVoucherMapper>('authorizationVoucher');
+  const invoiceMapper = mapperFactory.get<InvoiceMapper>('invoice');
 
   // Adapters
-  const coreAdapter = new CoreAdapter(config.externalServices.core, orderMapper);
-  const sealifyAdapter = new SealifyAdapter(config.externalServices.sealify);
-  const sriAdapter = new SriAdapter(
-    validationClient,
+  const coreAdapter = new CoreAdapter(
+    config.externalServices.core,
+    OrderResponseSchema,
+    orderMapper,
+  );
+  const sealifyAdapter = new SealifyAdapter(
+    config.externalServices.sealify,
+    SealInvoiceResponseSchema,
+  );
+  const sriValidationAdapter = new SriValidationAdapter(validationClient, validationVoucherMapper);
+
+  const sriAuthorizationAdapter = new SriAuthorizationAdapter(
     authorizationClient,
-    validationVoucherMapper,
     authorizationVoucherMapper,
   );
 
@@ -73,7 +94,7 @@ export async function initKakfaConsumers() {
   const invoiceProducer = new KafkaProducer(producer, KAFKA_TOPICS.INVOICES);
 
   // Use cases
-  const processOrderEventMessage = new ProcessOrderEventMessage(
+  const processOrderEventMessage = new ProcessOrderMessage(
     generateVoucherXmlService,
     coreAdapter,
     invoiceRepository,
@@ -81,15 +102,24 @@ export async function initKakfaConsumers() {
   );
   const processInvoiceMessage = new ProcessInvoiceMessage(
     sealifyAdapter,
-    sriAdapter,
+    sriValidationAdapter,
+    sriAuthorizationAdapter,
     invoiceRepository,
     invoiceProducer,
   );
 
   // Consumers
   const kakfaConsumer = new KafkaConsumer(consumer, [KAFKA_TOPICS.ORDERS, KAFKA_TOPICS.INVOICES], {
-    orders: { usecase: processOrderEventMessage, mapper: orderEventMapper },
-    invoices: { usecase: processInvoiceMessage, mapper: invoiceMessageMapper },
+    orders: {
+      usecase: processOrderEventMessage,
+      validator: OrderMessageSchema,
+      mapper: orderMessageMapper,
+    },
+    invoices: {
+      usecase: processInvoiceMessage,
+      validator: InvoiceMessageSchema,
+      mapper: invoiceMessageMapper,
+    },
   });
 
   // Producers

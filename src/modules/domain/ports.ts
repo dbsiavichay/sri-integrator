@@ -12,7 +12,10 @@ export interface MessageProducer<T> {
   sendMessage(message: T): Promise<void>;
 }
 
-export interface SriPort {
+export interface SriValidationPort {
   validateXml(xml: string): Promise<ValidationVoucher>;
+}
+
+export interface SriAuthorizationPort {
   authorizeXml(code: string): Promise<AuthorizationVoucher>;
 }

@@ -12,9 +12,6 @@ export class Product {
     public stock: number,
     public warehouseLocation: string,
     public type: string,
-    public category: any | null,
-    public measure: any | null,
-    public provider: any | null,
     public taxes: number[],
   ) {}
 }
@@ -41,7 +38,7 @@ export class Line {
     public unitPrice: number,
     public subtotal: number,
     public tax: number,
-    public total: number, // Se usará número en el dominio para facilitar cálculos
+    public total: number,
   ) {}
 }
 

@@ -1,16 +1,4 @@
-interface Customer {
-  id: number;
-  code: string;
-  firstName: string | null;
-  lastName: string | null;
-  bussinessName: string;
-  address: string | null;
-  phone: string | null;
-  email: string;
-  codeType: string;
-}
-
-interface Product {
+export interface ProductDTO {
   id: number;
   code: string;
   sku: string;
@@ -23,15 +11,24 @@ interface Product {
   stock: number;
   warehouseLocation: string;
   type: string;
-  category: unknown | null;
-  measure: unknown | null;
-  provider: unknown | null;
   taxes: number[];
 }
 
-interface Line {
+export interface CustomerDTO {
   id: number;
-  product: Product;
+  code: string;
+  firstName: string | null;
+  lastName: string | null;
+  bussinessName: string;
+  address: string | null;
+  phone: string | null;
+  email: string;
+  codeType: string;
+}
+
+export interface OrderLineDTO {
+  id: number;
+  product: ProductDTO;
   quantity: number;
   unitPrice: number;
   subtotal: number;
@@ -39,13 +36,13 @@ interface Line {
   total: number;
 }
 
-interface Payment {
+export interface PaymentDTO {
   id: number;
   type: string;
   amount: number;
 }
 
-interface SriConfig {
+export interface ConfigDTO {
   companyCode: string;
   companyName: string;
   companyTradeName: string;
@@ -61,16 +58,11 @@ interface SriConfig {
   signature: string;
 }
 
-interface Errors {
-  [key: string]: unknown;
-}
-
 export interface OrderDTO {
   id: number;
-  customer: Customer;
-  lines: Line[];
-  payments: Payment[];
-  sriConfig: SriConfig;
+  lines: OrderLineDTO[];
+  payments: PaymentDTO[];
+  sriConfig: ConfigDTO;
   date: string;
   authorizationDate: string | null;
   voucherTypeCode: string;
@@ -80,20 +72,9 @@ export interface OrderDTO {
   sequence: string;
   subtotal: number;
   tax: number;
-  total: string;
+  total: number;
   status: string;
-  file: unknown | null;
-  errors: Errors;
-}
-
-export interface OrderEventDTO {
-  id: number;
-  access_code: string;
-  sequence: string;
-}
-
-export interface InvoiceMessageDTO {
-  id: number;
-  orderId: number;
-  status: string;
+  file: any | null;
+  errors: Record<string, any>;
+  customer: CustomerDTO;
 }

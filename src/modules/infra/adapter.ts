@@ -1,45 +1,22 @@
 import { AuthorizationVoucher, Order, ValidationVoucher } from '../domain/models';
+import { AuthorizationVoucherResponseDTO, OrderDTO, ReceiptVoucherResponseDTO } from '../app/dtos';
 import { Consumer, Producer } from 'kafkajs';
-import { CorePort, MessageProducer, SealifyPort, SriPort } from '../domain/ports';
+import {
+  CorePort,
+  MessageProducer,
+  SealifyPort,
+  SriAuthorizationPort,
+  SriValidationPort,
+} from '../domain/ports';
+import { OrderResponse, SealInvoiceResponse } from './validators';
 
-import { AuthorizationVoucherResponseDTO } from './data-transfer-object';
 import { BaseHttpClient } from './http';
+import { BaseKafkaConsumer } from './kafka';
 import { Endpoint } from '../domain/types';
-import { Mapper } from './mappers';
-import { OrderDTO } from '../app/dtos';
+import { Mapper } from '../app/mappers/base';
 import { ProcessMessageUseCase } from '../app/usecase';
-import { ReceiptVoucherResponseDTO } from './data-transfer-object';
 import { SoapClient } from './soap';
-
-export abstract class BaseKafkaConsumer {
-  constructor(
-    private consumer: Consumer,
-    private topics: string[],
-  ) {}
-
-  protected abstract handleMessage(topic: string, message: string): Promise<void>;
-
-  async start(): Promise<void> {
-    await this.consumer.connect();
-
-    for (const topic of this.topics) {
-      await this.consumer.subscribe({ topic, fromBeginning: true });
-    }
-
-    await this.consumer.run({
-      eachMessage: async ({ topic, message }) => {
-        if (message.value) {
-          console.log(`📥 Kafka message from ${topic}: ${message.value.toString()}`);
-          await this.handleMessage(topic, message.value.toString());
-        }
-      },
-    });
-  }
-
-  async stop(): Promise<void> {
-    await this.consumer.disconnect();
-  }
-}
+import { ZodSchema } from 'zod';
 
 export class KafkaConsumer extends BaseKafkaConsumer {
   constructor(
@@ -47,7 +24,7 @@ export class KafkaConsumer extends BaseKafkaConsumer {
     topics: string[],
     private processors: Record<
       string,
-      { usecase: ProcessMessageUseCase<any>; mapper: Mapper<any, any> }
+      { usecase: ProcessMessageUseCase<any>; validator: ZodSchema<any>; mapper: Mapper<any, any> }
     >,
   ) {
     super(consumer, topics);
@@ -60,8 +37,15 @@ export class KafkaConsumer extends BaseKafkaConsumer {
       return;
     }
 
-    const transformedMessage = processor.mapper.transform(JSON.parse(message));
-    await processor.usecase.execute(transformedMessage);
+    const parsedMessage = processor.validator.safeParse(JSON.parse(message));
+
+    if (parsedMessage.error) {
+      console.error(parsedMessage.error.stack);
+      throw new Error(parsedMessage.error.errors.join(', '));
+    }
+
+    const domainMessage = processor.mapper.toDomain(parsedMessage.data);
+    await processor.usecase.execute(domainMessage);
   }
 }
 
@@ -85,6 +69,7 @@ export class KafkaProducer<T> implements MessageProducer<T> {
 export class CoreAdapter extends BaseHttpClient implements CorePort {
   constructor(
     endpoint: Endpoint,
+    private validator: ZodSchema<OrderResponse>,
     private mapper: Mapper<OrderDTO, Order>,
   ) {
     super({ baseURL: endpoint.host });
@@ -92,13 +77,21 @@ export class CoreAdapter extends BaseHttpClient implements CorePort {
 
   async retrieveOrder(orderId: number): Promise<Order> {
     const response = await this.get(`/api/invoice/${orderId}/`);
-    const order = this.mapper.transform(response.data as OrderDTO);
+    const parsedResponse = this.validator.safeParse(response.data);
+    if (parsedResponse.error) {
+      console.log(`ERRORS: ${parsedResponse.error.stack}`);
+      throw new Error(parsedResponse.error.errors.join(', '));
+    }
+    const order = this.mapper.mapToDomain(parsedResponse.data as OrderDTO);
     return order;
   }
 }
 
 export class SealifyAdapter extends BaseHttpClient implements SealifyPort {
-  constructor(endpoint: Endpoint) {
+  constructor(
+    endpoint: Endpoint,
+    private validator: ZodSchema<SealInvoiceResponse>,
+  ) {
     super({ baseURL: endpoint.host });
   }
 
@@ -106,30 +99,39 @@ export class SealifyAdapter extends BaseHttpClient implements SealifyPort {
     const response = await this.post(`/api/certificates/${certificateId}/seal-invoice`, {
       invoiceXML: xml,
     });
-    return response.data.sealedData as string;
+    const parsedResponse = this.validator.safeParse(response.data);
+    if (parsedResponse.error) {
+      throw new Error(parsedResponse.error.errors.join(', '));
+    }
+    return parsedResponse.data.sealedData;
   }
 }
 
-export class SriAdapter implements SriPort {
+export class SriValidationAdapter implements SriValidationPort {
   constructor(
     private validateClient: SoapClient,
-    private authorizationClient: SoapClient,
     private validationMapper: Mapper<ReceiptVoucherResponseDTO, ValidationVoucher>,
-    private authorizationMapper: Mapper<AuthorizationVoucherResponseDTO, AuthorizationVoucher>,
   ) {}
   async validateXml(xml: string): Promise<ValidationVoucher> {
     xml = Buffer.from(xml, 'utf-8').toString('base64');
     const response = await this.validateClient.callMethod('validarComprobante', { xml });
-    return this.validationMapper.transform(
+    return this.validationMapper.toDomain(
       response.RespuestaRecepcionComprobante as ReceiptVoucherResponseDTO,
     );
   }
+}
+
+export class SriAuthorizationAdapter implements SriAuthorizationPort {
+  constructor(
+    private authorizationClient: SoapClient,
+    private authorizationMapper: Mapper<AuthorizationVoucherResponseDTO, AuthorizationVoucher>,
+  ) {}
 
   async authorizeXml(code: string): Promise<AuthorizationVoucher> {
     const response = await this.authorizationClient.callMethod('autorizacionComprobante', {
       claveAccesoComprobante: code,
     });
-    return this.authorizationMapper.transform(
+    return this.authorizationMapper.toDomain(
       response.RespuestaAutorizacionComprobante as AuthorizationVoucherResponseDTO,
     );
   }

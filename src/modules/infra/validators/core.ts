@@ -1,4 +1,3 @@
-import { InvoiceStatus } from '../domain/constants';
 import { z } from 'zod';
 
 const ProductSchema = z.object({
@@ -14,9 +13,6 @@ const ProductSchema = z.object({
   stock: z.number(),
   warehouseLocation: z.string(),
   type: z.string(),
-  category: z.any().nullable(),
-  measure: z.any().nullable(),
-  provider: z.any().nullable(),
   taxes: z.array(z.number()),
 });
 
@@ -64,7 +60,7 @@ const ConfigSchema = z.object({
   signature: z.string(),
 });
 
-export const OrderSchema = z.object({
+export const OrderResponseSchema = z.object({
   id: z.number(),
   lines: z.array(OrderLineSchema),
   payments: z.array(PaymentSchema),
@@ -85,14 +81,4 @@ export const OrderSchema = z.object({
   customer: CustomerSchema,
 });
 
-export const OrderEventSchema = z.object({
-  id: z.number(),
-  access_code: z.string(),
-  sequence: z.string(),
-});
-
-export const InvoiceMessageSchema = z.object({
-  id: z.string(),
-  orderId: z.string(),
-  status: z.nativeEnum(InvoiceStatus),
-});
+export type OrderResponse = z.infer<typeof OrderResponseSchema>;
