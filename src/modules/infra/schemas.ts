@@ -1,3 +1,4 @@
+import { InvoiceStatus } from '../domain/constants';
 import { z } from 'zod';
 
 const ProductSchema = z.object({
@@ -93,5 +94,5 @@ export const OrderEventSchema = z.object({
 export const InvoiceMessageSchema = z.object({
   id: z.string(),
   orderId: z.string(),
-  status: z.string(),
+  status: z.nativeEnum(InvoiceStatus),
 });

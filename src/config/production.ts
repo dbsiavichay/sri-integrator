@@ -10,6 +10,10 @@ export default {
       host: 'http://localhost:3000',
       timeout: 1000,
     },
+    sriVoucherWsdl:
+      'https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl',
+    sriQueryWsdl:
+      'https://celcer.sri.gob.ec/comprobantes-electronicos-ws/AutorizacionComprobantesOffline?wsdl',
   },
   kafka: {
     brokers: ['localhost:29092'],

@@ -96,5 +96,4 @@ export interface InvoiceMessageDTO {
   id: number;
   orderId: number;
   status: string;
-  signatureId: string;
 }

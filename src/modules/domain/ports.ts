@@ -1,4 +1,4 @@
-import { Order } from './models';
+import { AuthorizationVoucher, Order, ValidationVoucher } from './models';
 
 export interface CorePort {
   retrieveOrder(orderId: number): Promise<Order>;
@@ -10,4 +10,9 @@ export interface SealifyPort {
 
 export interface MessageProducer<T> {
   sendMessage(message: T): Promise<void>;
+}
+
+export interface SriPort {
+  validateXml(xml: string): Promise<ValidationVoucher>;
+  authorizeXml(code: string): Promise<AuthorizationVoucher>;
 }

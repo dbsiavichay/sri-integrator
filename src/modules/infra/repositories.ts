@@ -1,18 +1,21 @@
 import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 
 import { Invoice } from '../domain/models';
+import { InvoiceDTO } from './data-transfer-object';
 import { InvoiceRepository } from '../domain/repositories';
+import { Mapper } from './mappers';
 
 export class DynamoInvoiceRepository implements InvoiceRepository {
   constructor(
     private docClient: DynamoDBDocumentClient,
     private tableName: string,
+    private mapper: Mapper<InvoiceDTO, Invoice>,
   ) {}
   async createInvoice(invoice: Invoice): Promise<Invoice> {
     await this.docClient.send(
       new PutCommand({
         TableName: this.tableName,
-        Item: invoice,
+        Item: this.mapper.toDTO(invoice),
       }),
     );
     return invoice;
@@ -22,7 +25,7 @@ export class DynamoInvoiceRepository implements InvoiceRepository {
     await this.docClient.send(
       new PutCommand({
         TableName: this.tableName,
-        Item: invoice,
+        Item: this.mapper.toDTO(invoice),
       }),
     );
     return invoice;
@@ -35,6 +38,6 @@ export class DynamoInvoiceRepository implements InvoiceRepository {
         Key: { id },
       }),
     );
-    return invoice.Item as Invoice;
+    return invoice.Item ? this.mapper.transform(invoice.Item as InvoiceDTO) : null;
   }
 }

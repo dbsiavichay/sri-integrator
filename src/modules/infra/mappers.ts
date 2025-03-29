@@ -1,9 +1,36 @@
-import { Customer, Line, Order, OrderEvent, Payment, Product, SriConfig } from '../domain/models';
+import {
+  AuthorizationVoucher,
+  Customer,
+  Invoice,
+  InvoiceStatusHistory,
+  Line,
+  Order,
+  OrderEvent,
+  Payment,
+  Product,
+  SriConfig,
+  ValidationVoucher,
+} from '../domain/models';
+import {
+  AuthorizationVoucherResponseDTO,
+  InvoiceDTO,
+  ReceiptVoucherResponseDTO,
+} from './data-transfer-object';
+import {
+  AuthorizationVoucherStatus,
+  InvoiceStatus,
+  ValidationVoucherStatus,
+} from '../domain/constants';
 import { InvoiceMessageDTO, OrderDTO, OrderEventDTO } from '../app/dtos';
 import { InvoiceMessageSchema, OrderEventSchema, OrderSchema } from './schemas';
 
 import { InvoiceMessage } from '../domain/models';
-import { Mapper } from '../app/mappers';
+
+export interface Mapper<S, T> {
+  transform(entity: S): T;
+  transform(array: S[]): T[];
+  transform(entityOrArray: S | S[]): T | T[];
+}
 
 export abstract class BaseMapper<S, T> implements Mapper<S, T> {
   protected abstract map(entity: S): T;
@@ -137,7 +164,99 @@ export class InvoiceMessageMapper extends BaseMapper<InvoiceMessageDTO, InvoiceM
       invoiceMessageInput.id,
       invoiceMessageInput.orderId,
       invoiceMessageInput.status,
-      invoiceMessageInput.signatureId,
     );
+  }
+}
+
+export class ValidationVoucherMapper extends BaseMapper<
+  ReceiptVoucherResponseDTO,
+  ValidationVoucher
+> {
+  protected map(dto: ReceiptVoucherResponseDTO): ValidationVoucher {
+    const voucher = dto.comprobantes?.comprobante?.[0];
+
+    return new ValidationVoucher(
+      this.mapStatus(dto.estado),
+      voucher?.claveAcceso ?? null,
+      voucher?.mensajes?.mensaje?.map(
+        (m) => `${m.tipo} ${m.identificador} : ${m.mensaje} : ${m.informacionAdicional}`,
+      ) ?? [],
+    );
+  }
+
+  private mapStatus(status: string): ValidationVoucherStatus {
+    switch (status) {
+      case 'RECIBIDA':
+        return ValidationVoucherStatus.ACCEPTED;
+      case 'DEVUELTA':
+        return ValidationVoucherStatus.REJECTED;
+      default:
+        throw new Error(`Not supported status: ${status}`);
+    }
+  }
+}
+
+export class AuthorizationVoucherMapper extends BaseMapper<
+  AuthorizationVoucherResponseDTO,
+  AuthorizationVoucher
+> {
+  protected map(dto: AuthorizationVoucherResponseDTO): AuthorizationVoucher {
+    const authorization = dto.autorizaciones?.autorizacion?.[0];
+
+    return new AuthorizationVoucher(
+      authorization ? this.mapStatus(authorization.estado) : null,
+      dto.claveAccesoConsultada,
+      authorization?.fechaAutorizacion ? new Date(authorization.fechaAutorizacion) : null,
+      authorization?.mensajes?.mensaje?.map(
+        (m) => `${m.tipo} ${m.identificador} : ${m.mensaje} : ${m.informacionAdicional}`,
+      ) ?? [],
+    );
+  }
+
+  private mapStatus(status: string): AuthorizationVoucherStatus {
+    switch (status) {
+      case 'AUTORIZADO':
+        return AuthorizationVoucherStatus.AUTHORIZED;
+      case 'NO AUTORIZADO':
+        return AuthorizationVoucherStatus.REJECTED;
+      default:
+        throw new Error(`Not supported status: ${status}`);
+    }
+  }
+}
+
+export class InvoiceMapper extends BaseMapper<InvoiceDTO, Invoice> {
+  protected map(dto: InvoiceDTO): Invoice {
+    return new Invoice(
+      dto.id,
+      dto.orderId,
+      dto.accessCode,
+      dto.status as InvoiceStatus,
+      dto.signatureId,
+      dto.xml,
+      dto.statusHistory.map(
+        (h) => new InvoiceStatusHistory(h.name as InvoiceStatus, new Date(h.date), h.description),
+      ),
+      dto.signedXml ?? '',
+      dto.authorizedXml ?? '',
+    );
+  }
+
+  toDTO(entity: Invoice): InvoiceDTO {
+    return {
+      id: entity.id,
+      orderId: entity.orderId,
+      accessCode: entity.accessCode,
+      status: entity.status,
+      signatureId: entity.signatureId,
+      xml: entity.xml,
+      statusHistory: entity.statusHistory.map((h) => ({
+        name: h.name,
+        date: h.date.toISOString(),
+        description: h.description ?? '',
+      })),
+      signedXml: entity.signedXml ?? '',
+      authorizedXml: entity.authorizedXml ?? '',
+    };
   }
 }

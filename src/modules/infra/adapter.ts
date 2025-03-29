@@ -1,12 +1,15 @@
+import { AuthorizationVoucher, Order, ValidationVoucher } from '../domain/models';
 import { Consumer, Producer } from 'kafkajs';
-import { CorePort, MessageProducer, SealifyPort } from '../domain/ports';
+import { CorePort, MessageProducer, SealifyPort, SriPort } from '../domain/ports';
 
+import { AuthorizationVoucherResponseDTO } from './data-transfer-object';
 import { BaseHttpClient } from './http';
 import { Endpoint } from '../domain/types';
-import { Mapper } from '../app/mappers';
-import { Order } from '../domain/models';
+import { Mapper } from './mappers';
 import { OrderDTO } from '../app/dtos';
 import { ProcessMessageUseCase } from '../app/usecase';
+import { ReceiptVoucherResponseDTO } from './data-transfer-object';
+import { SoapClient } from './soap';
 
 export abstract class BaseKafkaConsumer {
   constructor(
@@ -26,7 +29,7 @@ export abstract class BaseKafkaConsumer {
     await this.consumer.run({
       eachMessage: async ({ topic, message }) => {
         if (message.value) {
-          console.log(`📥 Kafka message from ${topic}: ${message.value}`);
+          console.log(`📥 Kafka message from ${topic}: ${message.value.toString()}`);
           await this.handleMessage(topic, message.value.toString());
         }
       },
@@ -74,7 +77,7 @@ export class KafkaProducer<T> implements MessageProducer<T> {
       topic: this.topic,
       messages: [{ value: JSON.stringify(message) }],
     });
-    console.log(`📤 Message sent to ${this.topic}: ${message}`);
+    console.log(`📤 Message sent to ${this.topic}: ${JSON.stringify(message)}`);
     await this.producer.disconnect();
   }
 }
@@ -104,5 +107,30 @@ export class SealifyAdapter extends BaseHttpClient implements SealifyPort {
       invoiceXML: xml,
     });
     return response.data.sealedData as string;
+  }
+}
+
+export class SriAdapter implements SriPort {
+  constructor(
+    private validateClient: SoapClient,
+    private authorizationClient: SoapClient,
+    private validationMapper: Mapper<ReceiptVoucherResponseDTO, ValidationVoucher>,
+    private authorizationMapper: Mapper<AuthorizationVoucherResponseDTO, AuthorizationVoucher>,
+  ) {}
+  async validateXml(xml: string): Promise<ValidationVoucher> {
+    xml = Buffer.from(xml, 'utf-8').toString('base64');
+    const response = await this.validateClient.callMethod('validarComprobante', { xml });
+    return this.validationMapper.transform(
+      response.RespuestaRecepcionComprobante as ReceiptVoucherResponseDTO,
+    );
+  }
+
+  async authorizeXml(code: string): Promise<AuthorizationVoucher> {
+    const response = await this.authorizationClient.callMethod('autorizacionComprobante', {
+      claveAccesoComprobante: code,
+    });
+    return this.authorizationMapper.transform(
+      response.RespuestaAutorizacionComprobante as AuthorizationVoucherResponseDTO,
+    );
   }
 }
