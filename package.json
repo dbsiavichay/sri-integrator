@@ -18,9 +18,11 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.774.0",
     "@aws-sdk/lib-dynamodb": "^3.774.0",
+    "@aws-sdk/util-dynamodb": "^3.777.0",
     "axios": "^1.8.2",
     "kafkajs": "^2.2.4",
     "luxon": "^3.5.0",
+    "strong-soap": "^4.1.10",
     "xmlbuilder2": "^3.1.1",
     "zod": "^3.24.2"
   },

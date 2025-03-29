@@ -6,7 +6,7 @@ export class GenerateVoucherXmlService {
   constructor(private timeZone: string) {}
 
   private getData(order: Order): any {
-    const adjustedVoucherDate = DateTime.fromJSDate(order.date).setZone(this.timeZone).toJSDate();
+    const adjustedVoucherDate = DateTime.fromJSDate(order.date).setZone(this.timeZone);
     const customer = order.customer;
     const payments = order.payments;
     const lines = order.lines;
@@ -29,7 +29,7 @@ export class GenerateVoucherXmlService {
           dirMatriz: order.sriConfig.companyMainAddress,
         },
         infoFactura: {
-          fechaEmision: adjustedVoucherDate.toISOString().substr(0, 10),
+          fechaEmision: adjustedVoucherDate.toFormat('dd/MM/yyyy'),
           dirEstablecimiento: order.sriConfig.companyBranchAddress,
           obligadoContabilidad: order.sriConfig.companyAccountingRequired ? 'SI' : 'NO',
           tipoIdentificacionComprador: order.customer.codeType,
@@ -37,14 +37,16 @@ export class GenerateVoucherXmlService {
           identificacionComprador: order.customer.code,
           totalSinImpuestos: order.subtotal,
           totalDescuento: 0,
-          totalConImpuestos: [
-            {
-              codigo: 2,
-              codigoPorcentaje: 4,
-              baseImponible: order.subtotal,
-              valor: order.tax,
-            },
-          ],
+          totalConImpuestos: {
+            totalImpuesto: [
+              {
+                codigo: 2,
+                codigoPorcentaje: 4,
+                baseImponible: order.subtotal,
+                valor: order.tax,
+              },
+            ],
+          },
           propina: 0,
           importeTotal: order.total,
           moneda: 'DOLAR',

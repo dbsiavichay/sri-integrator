@@ -4,6 +4,8 @@ export interface AppConfig {
   externalServices: {
     core: Endpoint;
     sealify: Endpoint;
+    sriVoucherWsdl: string;
+    sriQueryWsdl: string;
   };
   kafka: {
     brokers: string[];
