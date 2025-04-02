@@ -1,3 +1,5 @@
+import { GenerateInvoiceXml } from '../services';
+
 export class Product {
   constructor(
     public id: number,
@@ -89,4 +91,8 @@ export class Order {
     public errors: Record<string, any>,
     public customer: Customer,
   ) {}
+
+  public generateInvoiceXml(): string {
+    return GenerateInvoiceXml.generate(this);
+  }
 }
