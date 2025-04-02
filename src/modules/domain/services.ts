@@ -2,11 +2,9 @@ import { DateTime } from 'luxon';
 import { Order } from './models';
 import { create } from 'xmlbuilder2';
 
-export class GenerateVoucherXmlService {
-  constructor(private timeZone: string) {}
-
-  private getData(order: Order): any {
-    const adjustedVoucherDate = DateTime.fromJSDate(order.date).setZone(this.timeZone);
+export class GenerateInvoiceXml {
+  private static getData(order: Order) {
+    const adjustedVoucherDate = DateTime.fromJSDate(order.date);
     const customer = order.customer;
     const payments = order.payments;
     const lines = order.lines;
@@ -112,7 +110,7 @@ export class GenerateVoucherXmlService {
     return data;
   }
 
-  public generate(order: Order): string {
+  public static generate(order: Order): string {
     const data = this.getData(order);
     const xml = create(data).end({ prettyPrint: true });
     return xml;

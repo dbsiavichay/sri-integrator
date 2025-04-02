@@ -25,7 +25,6 @@ import { ProcessInvoiceMessage, ProcessOrderMessage } from '#/modules/app/usecas
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { DynamoInvoiceRepository } from '#/modules/infra/repositories';
-import { GenerateVoucherXmlService } from '#/modules/domain/services';
 import { InvoiceMapper } from '../modules/app/mappers/invoice';
 import { KAFKA_TOPICS } from './enums';
 import { Kafka } from 'kafkajs';
@@ -50,9 +49,6 @@ export async function initKakfaConsumers() {
 
   const validationClient = new SoapClient(config.externalServices.sriVoucherWsdl);
   const authorizationClient = new SoapClient(config.externalServices.sriQueryWsdl);
-
-  // Domain services
-  const generateVoucherXmlService = new GenerateVoucherXmlService(config.timezone);
 
   // Asegurarse que el MapperFactory se inicialice después de que los decoradores se hayan ejecutado
   const mapperFactory = MapperFactory.getInstance();
@@ -95,7 +91,6 @@ export async function initKakfaConsumers() {
 
   // Use cases
   const processOrderEventMessage = new ProcessOrderMessage(
-    generateVoucherXmlService,
     coreAdapter,
     invoiceRepository,
     invoiceProducer,

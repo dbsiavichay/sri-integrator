@@ -12,7 +12,6 @@ import {
 } from '../domain/ports';
 import { Invoice, InvoiceMessage, OrderMessage } from '../domain/models';
 
-import { GenerateVoucherXmlService } from '../domain/services';
 import { InvoiceRepository } from '../domain/repositories';
 
 export interface ProcessMessageUseCase<T> {
@@ -21,7 +20,6 @@ export interface ProcessMessageUseCase<T> {
 
 export class ProcessOrderMessage implements ProcessMessageUseCase<OrderMessage> {
   constructor(
-    private service: GenerateVoucherXmlService,
     private corePort: CorePort,
     private invoiceRepository: InvoiceRepository,
     private messageProducer: MessageProducer<InvoiceMessage>,
@@ -29,7 +27,7 @@ export class ProcessOrderMessage implements ProcessMessageUseCase<OrderMessage> 
 
   async execute(message: OrderMessage) {
     const order = await this.corePort.retrieveOrder(message.id);
-    const xml = this.service.generate(order);
+    const xml = order.generateInvoiceXml();
     const invoice = new Invoice(
       undefined,
       order.id.toString(),
