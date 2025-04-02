@@ -3,8 +3,14 @@ import {
   InvoiceStatus,
   ValidationVoucherStatus,
 } from '../domain/constants';
-import { CorePort, MessageProducer, SealifyPort, SriPort } from '../domain/ports';
-import { Invoice, InvoiceMessage, OrderEvent } from '../domain/models';
+import {
+  CorePort,
+  MessageProducer,
+  SealifyPort,
+  SriAuthorizationPort,
+  SriValidationPort,
+} from '../domain/ports';
+import { Invoice, InvoiceMessage, OrderMessage } from '../domain/models';
 
 import { GenerateVoucherXmlService } from '../domain/services';
 import { InvoiceRepository } from '../domain/repositories';
@@ -13,7 +19,7 @@ export interface ProcessMessageUseCase<T> {
   execute(message: T): Promise<void>;
 }
 
-export class ProcessOrderEventMessage implements ProcessMessageUseCase<OrderEvent> {
+export class ProcessOrderMessage implements ProcessMessageUseCase<OrderMessage> {
   constructor(
     private service: GenerateVoucherXmlService,
     private corePort: CorePort,
@@ -21,7 +27,7 @@ export class ProcessOrderEventMessage implements ProcessMessageUseCase<OrderEven
     private messageProducer: MessageProducer<InvoiceMessage>,
   ) {}
 
-  async execute(message: OrderEvent) {
+  async execute(message: OrderMessage) {
     const order = await this.corePort.retrieveOrder(message.id);
     const xml = this.service.generate(order);
     const invoice = new Invoice(
@@ -32,7 +38,7 @@ export class ProcessOrderEventMessage implements ProcessMessageUseCase<OrderEven
       order.sriConfig.signature,
       xml,
     );
-    invoice.addStatusHistory(InvoiceStatus.CREATED);
+    invoice.addStatusHistory(InvoiceStatus.CREATED, new Date(), 'XML created');
     await this.invoiceRepository.createInvoice(invoice);
     await this.messageProducer.sendMessage(
       new InvoiceMessage(invoice.id, invoice.orderId, invoice.status),
@@ -43,7 +49,8 @@ export class ProcessOrderEventMessage implements ProcessMessageUseCase<OrderEven
 export class ProcessInvoiceMessage implements ProcessMessageUseCase<InvoiceMessage> {
   constructor(
     private sealifyPort: SealifyPort,
-    private sriPort: SriPort,
+    private sriValidationPort: SriValidationPort,
+    private sriAuthorizationPort: SriAuthorizationPort,
     private invoiceRepository: InvoiceRepository,
     private messageProducer: MessageProducer<InvoiceMessage>,
   ) {}
@@ -62,23 +69,21 @@ export class ProcessInvoiceMessage implements ProcessMessageUseCase<InvoiceMessa
 
     if (invoice.status === InvoiceStatus.CREATED) {
       const signedXml = await this.sealifyPort.sealInvoice(invoice.xml, invoice.signatureId);
-      invoice.signedXml = signedXml;
-      invoice.status = InvoiceStatus.SIGNED;
+      invoice.xml = signedXml;
+      invoice.addStatusHistory(InvoiceStatus.SIGNED, new Date(), 'XML signed');
     } else if (invoice.status === InvoiceStatus.SIGNED) {
-      const validationVoucher = await this.sriPort.validateXml(invoice.signedXml ?? '');
+      const validationVoucher = await this.sriValidationPort.validateXml(invoice.xml);
       const invoiceStatus =
         validationVoucher.status === ValidationVoucherStatus.ACCEPTED
           ? InvoiceStatus.SENT
           : InvoiceStatus.REJECTED;
-      invoice.status = invoiceStatus;
       invoice.addStatusHistory(invoiceStatus, new Date(), validationVoucher.messages.join(' >> '));
     } else if (invoice.status === InvoiceStatus.SENT) {
-      const authorizationVoucher = await this.sriPort.authorizeXml(invoice.accessCode);
+      const authorizationVoucher = await this.sriAuthorizationPort.authorizeXml(invoice.accessCode);
       const invoiceStatus =
         authorizationVoucher.status === AuthorizationVoucherStatus.AUTHORIZED
           ? InvoiceStatus.AUTHORIZED
           : InvoiceStatus.REJECTED;
-      invoice.status = invoiceStatus;
       invoice.addStatusHistory(
         invoiceStatus,
         new Date(),

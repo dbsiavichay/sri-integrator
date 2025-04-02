@@ -10,11 +10,10 @@ export class Invoice {
     public signatureId: string,
     public xml: string,
     public statusHistory: InvoiceStatusHistory[] = [],
-    public signedXml?: string | null,
-    public authorizedXml?: string | null,
   ) {}
 
   addStatusHistory(status: InvoiceStatus, date = new Date(), description?: string) {
+    this.status = status;
     this.statusHistory.push(new InvoiceStatusHistory(status, date, description));
   }
 }
@@ -22,7 +21,7 @@ export class Invoice {
 export class InvoiceStatusHistory {
   constructor(
     public name: InvoiceStatus,
-    public date: Date,
+    public statusDate: Date,
     public description?: string,
   ) {}
 }

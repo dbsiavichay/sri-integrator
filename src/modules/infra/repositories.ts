@@ -1,9 +1,9 @@
 import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 
 import { Invoice } from '../domain/models';
-import { InvoiceDTO } from './data-transfer-object';
+import { InvoiceDTO } from '../app/dtos';
 import { InvoiceRepository } from '../domain/repositories';
-import { Mapper } from './mappers';
+import { Mapper } from '../app/mappers';
 
 export class DynamoInvoiceRepository implements InvoiceRepository {
   constructor(
@@ -38,6 +38,6 @@ export class DynamoInvoiceRepository implements InvoiceRepository {
         Key: { id },
       }),
     );
-    return invoice.Item ? this.mapper.transform(invoice.Item as InvoiceDTO) : null;
+    return invoice.Item ? this.mapper.toDomain(invoice.Item as InvoiceDTO) : null;
   }
 }

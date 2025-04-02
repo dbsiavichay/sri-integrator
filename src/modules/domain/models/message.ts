@@ -1,6 +1,6 @@
 import { InvoiceStatus } from '../constants';
 
-export class OrderEvent {
+export class OrderMessage {
   constructor(
     public id: number,
     public accessCode: string,
