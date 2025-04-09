@@ -1,4 +1,4 @@
-import { AuthorizationVoucher, Order, ValidationVoucher } from './models';
+import { AuthorizationVoucher, Order, ValidationVoucher } from '../models';
 
 export interface CorePort {
   retrieveOrder(orderId: number): Promise<Order>;

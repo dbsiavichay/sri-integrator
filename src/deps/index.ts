@@ -12,7 +12,7 @@ import {
   SealifyAdapter,
   SriAuthorizationAdapter,
   SriValidationAdapter,
-} from '#/modules/infra/adapter';
+} from '#/modules/infra/adapters';
 import { InvoiceMessageMapper, OrderMessageMapper } from '../modules/app/mappers/message';
 import {
   InvoiceMessageSchema,
@@ -22,6 +22,7 @@ import {
 } from '#/modules/infra/validators';
 import { ProcessInvoiceMessage, ProcessOrderMessage } from '#/modules/app/usecase';
 
+import { AppConfig } from '#/config';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { DynamoInvoiceRepository } from '#/modules/infra/repositories';
@@ -31,11 +32,11 @@ import { Kafka } from 'kafkajs';
 import { MapperFactory } from '#/modules/app/mappers/factory';
 import { OrderMapper } from '#/modules/app/mappers/core';
 import { SoapClient } from '#/modules/infra/soap';
-import loadConfig from '#/config';
 
-export async function initKakfaConsumers() {
-  const config = await loadConfig();
+export { initTelemetry, shutdownTelemetry } from './telemetry';
+export { initLogger, getLogger } from './logger';
 
+export async function initKakfaConsumers(config: AppConfig) {
   // External services
   const kafka = new Kafka({
     clientId: 'sri-integrator',

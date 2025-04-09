@@ -1,7 +1,14 @@
 import { Endpoint } from '#/modules/domain/types';
 
 export interface AppConfig {
+  serviceName: string;
+  serviceVersion: string;
+  logger: {
+    level: string;
+    prettyPrint: boolean;
+  };
   externalServices: {
+    otelCollector: Endpoint;
     core: Endpoint;
     sealify: Endpoint;
     sriVoucherWsdl: string;

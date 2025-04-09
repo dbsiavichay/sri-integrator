@@ -1,5 +1,9 @@
-import { AuthorizationVoucher, Order, ValidationVoucher } from '../domain/models';
-import { AuthorizationVoucherResponseDTO, OrderDTO, ReceiptVoucherResponseDTO } from '../app/dtos';
+import { AuthorizationVoucher, Order, ValidationVoucher } from '#/modules/domain/models';
+import {
+  AuthorizationVoucherResponseDTO,
+  OrderDTO,
+  ReceiptVoucherResponseDTO,
+} from '#/modules/app/dtos';
 import { Consumer, Producer } from 'kafkajs';
 import {
   CorePort,
@@ -7,15 +11,15 @@ import {
   SealifyPort,
   SriAuthorizationPort,
   SriValidationPort,
-} from '../domain/ports';
-import { OrderResponse, SealInvoiceResponse } from './validators';
+} from '#/modules/domain/ports';
+import { OrderResponse, SealInvoiceResponse } from '../validators';
 
-import { BaseHttpClient } from './http';
-import { BaseKafkaConsumer } from './kafka';
-import { Endpoint } from '../domain/types';
-import { Mapper } from '../app/mappers/base';
-import { ProcessMessageUseCase } from '../app/usecase';
-import { SoapClient } from './soap';
+import { BaseHttpClient } from '../http';
+import { BaseKafkaConsumer } from '../kafka';
+import { Endpoint } from '#/modules/domain/types';
+import { Mapper } from '#/modules/app/mappers';
+import { ProcessMessageUseCase } from '#/modules/app/usecase';
+import { SoapClient } from '../soap';
 import { ZodSchema } from 'zod';
 
 export class KafkaConsumer extends BaseKafkaConsumer {
