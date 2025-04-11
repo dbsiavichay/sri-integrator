@@ -1,7 +1,17 @@
 import { AppConfig } from './index';
 
 export default {
+  serviceName: 'sri-integrator',
+  serviceVersion: '1.0.0',
+  logger: {
+    level: 'debug',
+    prettyPrint: true,
+  },
   externalServices: {
+    otelCollector: {
+      host: 'http://localhost:4318',
+      timeout: 1000,
+    },
     core: {
       host: 'http://localhost:8000',
       timeout: 1000,
