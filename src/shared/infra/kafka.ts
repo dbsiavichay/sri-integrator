@@ -1,10 +1,10 @@
-import { Consumer } from 'kafkajs';
+import { KafkaJS } from '@confluentinc/kafka-javascript';
 
 import { logger } from '../logger';
 
 export abstract class BaseKafkaConsumer {
   constructor(
-    private consumer: Consumer,
+    private consumer: KafkaJS.Consumer,
     private topics: string[],
   ) {}
 
@@ -12,10 +12,7 @@ export abstract class BaseKafkaConsumer {
 
   async start(): Promise<void> {
     await this.consumer.connect();
-
-    for (const topic of this.topics) {
-      await this.consumer.subscribe({ topic, fromBeginning: false });
-    }
+    await this.consumer.subscribe({ topics: this.topics });
 
     await this.consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
@@ -45,7 +42,6 @@ export abstract class BaseKafkaConsumer {
   }
 
   async stop(): Promise<void> {
-    await this.consumer.stop();
     await this.consumer.disconnect();
   }
 }
