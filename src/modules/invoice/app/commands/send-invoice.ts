@@ -1,11 +1,12 @@
 import { logger } from '#/shared/logger';
 
-import { Invoice, InvoiceStatus } from '../../domain/invoice';
+import { Invoice } from '../../domain/invoice';
 import { SriValidationPort } from '../../domain/ports';
 import { InvoiceRepository } from '../../domain/repository';
 import { ValidationVoucherStatus } from '../../domain/voucher';
+import { InvoiceCommand } from './command';
 
-export class SendInvoiceCommand {
+export class SendInvoiceCommand implements InvoiceCommand {
   constructor(
     private sriValidationPort: SriValidationPort,
     private invoiceRepository: InvoiceRepository,
@@ -14,12 +15,12 @@ export class SendInvoiceCommand {
   async execute(invoice: Invoice): Promise<void> {
     logger.info({ invoiceId: invoice.id }, 'Sending invoice to SRI');
     const validationVoucher = await this.sriValidationPort.validateXml(invoice.xml);
-    const invoiceStatus =
-      validationVoucher.status === ValidationVoucherStatus.ACCEPTED
-        ? InvoiceStatus.SENT
-        : InvoiceStatus.REJECTED;
-    invoice.addStatusHistory(invoiceStatus, new Date(), validationVoucher.messages.join(' >> '));
+    if (validationVoucher.status === ValidationVoucherStatus.ACCEPTED) {
+      invoice.markAsSent(validationVoucher.messages);
+    } else {
+      invoice.reject(validationVoucher.messages);
+    }
     await this.invoiceRepository.updateInvoice(invoice);
-    logger.info({ invoiceId: invoice.id, status: invoiceStatus }, 'Invoice sent to SRI');
+    logger.info({ invoiceId: invoice.id, status: invoice.status }, 'Invoice sent to SRI');
   }
 }
