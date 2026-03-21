@@ -1,5 +1,7 @@
 import { Producer } from 'kafkajs';
+
 import { logger } from '#/shared/logger';
+
 import { MessageProducer } from '../../domain/ports';
 
 export class KafkaProducer<T> implements MessageProducer<T> {

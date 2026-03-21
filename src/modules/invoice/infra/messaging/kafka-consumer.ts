@@ -1,17 +1,18 @@
 import { Consumer } from 'kafkajs';
-import { logger } from '#/shared/logger';
-import { BaseKafkaConsumer } from '#/shared/infra/kafka';
 import { ZodSchema } from 'zod';
 
+import { BaseKafkaConsumer } from '#/shared/infra/kafka';
+import { logger } from '#/shared/logger';
+
 interface MessageProcessor {
-  handle(message: any): Promise<void>;
+  handle(message: unknown): Promise<void>;
 }
 
 export class InvoiceKafkaConsumer extends BaseKafkaConsumer {
   constructor(
     consumer: Consumer,
     topics: string[],
-    private processors: Record<string, { handler: MessageProcessor; validator: ZodSchema<any> }>,
+    private processors: Record<string, { handler: MessageProcessor; validator: ZodSchema }>,
   ) {
     super(consumer, topics);
   }

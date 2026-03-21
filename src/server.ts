@@ -1,6 +1,7 @@
-import { createContainer } from './container';
 import { initLogger, logger } from '#/shared/logger';
+
 import loadConfig from './config';
+import { createContainer } from './container';
 
 const main = async () => {
   const config = await loadConfig();

@@ -1,7 +1,7 @@
 import { InvoiceDomainEvent } from '../../domain/events';
 import { MessageProducer } from '../../domain/ports';
-import { CreateInvoiceCommand } from '../commands/create-invoice';
 import { OrderMessage } from '../../infra/messaging/schemas';
+import { CreateInvoiceCommand } from '../commands/create-invoice';
 
 export class OrderMessageHandler {
   constructor(

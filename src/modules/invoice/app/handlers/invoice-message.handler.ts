@@ -1,3 +1,5 @@
+import { logger } from '#/shared/logger';
+
 import { InvoiceDomainEvent } from '../../domain/events';
 import { InvoiceStatus } from '../../domain/invoice';
 import { MessageProducer } from '../../domain/ports';
@@ -6,7 +8,6 @@ import { InvoiceMessage } from '../../infra/messaging/schemas';
 import { AuthorizeInvoiceCommand } from '../commands/authorize-invoice';
 import { SendInvoiceCommand } from '../commands/send-invoice';
 import { SignInvoiceCommand } from '../commands/sign-invoice';
-import { logger } from '#/shared/logger';
 
 export class InvoiceMessageHandler {
   constructor(
