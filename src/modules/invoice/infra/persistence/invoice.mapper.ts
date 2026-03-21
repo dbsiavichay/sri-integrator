@@ -15,15 +15,15 @@ export interface InvoiceRecord {
   }[];
 }
 
-export function toInvoiceRecord(entity: Invoice): InvoiceRecord {
+export function toInvoiceRecord(invoice: Invoice): InvoiceRecord {
   return {
-    id: entity.id,
-    orderId: entity.orderId,
-    accessCode: entity.accessCode.value,
-    status: entity.status,
-    signatureId: entity.signatureId,
-    xml: entity.xml,
-    statusHistory: entity.statusHistory.map((h) => ({
+    id: invoice.id,
+    orderId: invoice.orderId,
+    accessCode: invoice.accessCode.value,
+    status: invoice.status,
+    signatureId: invoice.signatureId,
+    xml: invoice.xml,
+    statusHistory: invoice.statusHistory.map((h) => ({
       name: h.name,
       statusDate: h.statusDate.toISOString(),
       description: h.description ?? '',

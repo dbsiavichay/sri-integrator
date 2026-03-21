@@ -4,11 +4,13 @@ import { KafkaJS } from '@confluentinc/kafka-javascript';
 
 import { AppConfig } from '#/config';
 import { AuthorizeInvoiceCommand } from '#/modules/invoice/app/commands/authorize-invoice';
+import { InvoiceCommand } from '#/modules/invoice/app/commands/command';
 import { CreateInvoiceCommand } from '#/modules/invoice/app/commands/create-invoice';
 import { SendInvoiceCommand } from '#/modules/invoice/app/commands/send-invoice';
 import { SignInvoiceCommand } from '#/modules/invoice/app/commands/sign-invoice';
 import { InvoiceMessageHandler } from '#/modules/invoice/app/handlers/invoice-message.handler';
 import { OrderMessageHandler } from '#/modules/invoice/app/handlers/order-message.handler';
+import { InvoiceStatus } from '#/modules/invoice/domain/invoice';
 import { CoreAdapter } from '#/modules/invoice/infra/adapters/core.adapter';
 import { SealifyAdapter } from '#/modules/invoice/infra/adapters/sealify.adapter';
 import { SriAuthorizationAdapter } from '#/modules/invoice/infra/adapters/sri-authorization.adapter';
@@ -80,13 +82,18 @@ export async function createContainer(config: AppConfig) {
     invoiceRepository,
   );
 
+  // Command dispatch map
+  const commandMap = new Map<InvoiceStatus, InvoiceCommand>([
+    [InvoiceStatus.CREATED, signInvoiceCommand],
+    [InvoiceStatus.SIGNED, sendInvoiceCommand],
+    [InvoiceStatus.SENT, authorizeInvoiceCommand],
+  ]);
+
   // Handlers
   const orderMessageHandler = new OrderMessageHandler(createInvoiceCommand, invoiceProducer);
   const invoiceMessageHandler = new InvoiceMessageHandler(
     invoiceRepository,
-    signInvoiceCommand,
-    sendInvoiceCommand,
-    authorizeInvoiceCommand,
+    commandMap,
     invoiceProducer,
   );
 

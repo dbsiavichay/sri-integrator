@@ -1,11 +1,12 @@
 import { logger } from '#/shared/logger';
 
-import { Invoice, InvoiceStatus } from '../../domain/invoice';
+import { Invoice } from '../../domain/invoice';
 import { SriAuthorizationPort } from '../../domain/ports';
 import { InvoiceRepository } from '../../domain/repository';
 import { AuthorizationVoucherStatus } from '../../domain/voucher';
+import { InvoiceCommand } from './command';
 
-export class AuthorizeInvoiceCommand {
+export class AuthorizeInvoiceCommand implements InvoiceCommand {
   constructor(
     private sriAuthorizationPort: SriAuthorizationPort,
     private invoiceRepository: InvoiceRepository,
@@ -19,14 +20,14 @@ export class AuthorizeInvoiceCommand {
     const authorizationVoucher = await this.sriAuthorizationPort.authorizeXml(
       invoice.accessCode.value,
     );
-    const invoiceStatus =
-      authorizationVoucher.status === AuthorizationVoucherStatus.AUTHORIZED
-        ? InvoiceStatus.AUTHORIZED
-        : InvoiceStatus.REJECTED;
-    invoice.addStatusHistory(invoiceStatus, new Date(), authorizationVoucher.messages.join(' >> '));
+    if (authorizationVoucher.status === AuthorizationVoucherStatus.AUTHORIZED) {
+      invoice.authorize(authorizationVoucher.messages);
+    } else {
+      invoice.reject(authorizationVoucher.messages);
+    }
     await this.invoiceRepository.updateInvoice(invoice);
     logger.info(
-      { invoiceId: invoice.id, status: invoiceStatus },
+      { invoiceId: invoice.id, status: invoice.status },
       'Invoice authorization completed',
     );
   }
