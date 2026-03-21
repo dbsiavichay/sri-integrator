@@ -20,9 +20,7 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { DynamoInvoiceRepository } from '#/modules/infra/repositories';
 import { KAFKA_TOPICS } from './enums';
 import { Kafka } from 'kafkajs';
-import { SoapClient } from '#/modules/infra/soap';
-
-export { initLogger, getLogger } from './logger';
+import { SoapClient } from '#/shared/infra/soap-client';
 
 export async function initKakfaConsumers(config: AppConfig) {
   // External services

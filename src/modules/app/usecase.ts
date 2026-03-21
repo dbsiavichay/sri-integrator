@@ -13,6 +13,7 @@ import {
 import { Invoice, InvoiceMessage, OrderMessage } from '../domain/models';
 
 import { InvoiceRepository } from '../domain/repositories';
+import { logger } from '#/shared/logger';
 
 export interface ProcessMessageUseCase<T> {
   execute(message: T): Promise<void>;
@@ -56,12 +57,12 @@ export class ProcessInvoiceMessage implements ProcessMessageUseCase<InvoiceMessa
   async execute(message: InvoiceMessage) {
     const invoice = await this.invoiceRepository.getInvoiceById(message.id);
     if (!invoice) {
-      console.warn(`⚠️ Invoice not found: ${message.id}`);
+      logger.warn({ invoiceId: message.id }, 'Invoice not found');
       return;
     }
 
     if ([InvoiceStatus.REJECTED, InvoiceStatus.AUTHORIZED].includes(invoice.status)) {
-      console.warn(`⚠️ Invoice already processed: ${message.id}`);
+      logger.warn({ invoiceId: message.id }, 'Invoice already processed');
       return;
     }
 
