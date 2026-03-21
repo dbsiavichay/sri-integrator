@@ -1,4 +1,5 @@
-import { soap } from 'strong-soap';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { soap } = require('strong-soap');
 
 export class SoapClient {
   private wsdlUrl: string;
@@ -12,7 +13,7 @@ export class SoapClient {
     if (this.client) return;
 
     this.client = await new Promise((resolve, reject) => {
-      soap.createClient(this.wsdlUrl, {}, (err, client) => {
+      soap.createClient(this.wsdlUrl, {}, (err: any, client: any) => {
         if (err) return reject(err);
         resolve(client);
       });
