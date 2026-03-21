@@ -12,7 +12,7 @@ import { InvoiceMessageHandler } from '#/modules/invoice/app/handlers/invoice-me
 import { OrderMessageHandler } from '#/modules/invoice/app/handlers/order-message.handler';
 import { InvoiceStatus } from '#/modules/invoice/domain/invoice';
 import { CoreAdapter } from '#/modules/invoice/infra/adapters/core.adapter';
-import { SealifyAdapter } from '#/modules/invoice/infra/adapters/sealify.adapter';
+import { LocalSignerAdapter } from '#/modules/invoice/infra/adapters/local-signer.adapter';
 import { SriAuthorizationAdapter } from '#/modules/invoice/infra/adapters/sri-authorization.adapter';
 import { SriValidationAdapter } from '#/modules/invoice/infra/adapters/sri-validation.adapter';
 import { InvoiceKafkaConsumer } from '#/modules/invoice/infra/messaging/kafka-consumer';
@@ -21,10 +21,11 @@ import {
   InvoiceMessageSchema,
   OrderMessageSchema,
   OrderResponseSchema,
-  SealInvoiceResponseSchema,
 } from '#/modules/invoice/infra/messaging/schemas';
 import { KAFKA_TOPICS } from '#/modules/invoice/infra/messaging/topics';
 import { DynamoInvoiceRepository } from '#/modules/invoice/infra/persistence/dynamo-invoice.repository';
+import { P12Reader } from '#/modules/invoice/infra/signing/p12-reader';
+import { XadesSigner } from '#/modules/invoice/infra/signing/xades-signer';
 import { SoapClient } from '#/shared/infra/soap-client';
 
 export async function createContainer(config: AppConfig) {
@@ -63,10 +64,9 @@ export async function createContainer(config: AppConfig) {
 
   // Adapters
   const coreAdapter = new CoreAdapter(config.externalServices.core, OrderResponseSchema);
-  const sealifyAdapter = new SealifyAdapter(
-    config.externalServices.sealify,
-    SealInvoiceResponseSchema,
-  );
+  const p12Reader = new P12Reader(config.signing.p12Path, config.signing.p12Password);
+  const xadesSigner = new XadesSigner(config.timezone);
+  const localSignerAdapter = new LocalSignerAdapter(p12Reader, xadesSigner);
   const sriValidationAdapter = new SriValidationAdapter(validationClient);
   const sriAuthorizationAdapter = new SriAuthorizationAdapter(authorizationClient);
 
@@ -75,7 +75,7 @@ export async function createContainer(config: AppConfig) {
 
   // Commands
   const createInvoiceCommand = new CreateInvoiceCommand(coreAdapter, invoiceRepository);
-  const signInvoiceCommand = new SignInvoiceCommand(sealifyAdapter, invoiceRepository);
+  const signInvoiceCommand = new SignInvoiceCommand(localSignerAdapter, invoiceRepository);
   const sendInvoiceCommand = new SendInvoiceCommand(sriValidationAdapter, invoiceRepository);
   const authorizeInvoiceCommand = new AuthorizeInvoiceCommand(
     sriAuthorizationAdapter,
