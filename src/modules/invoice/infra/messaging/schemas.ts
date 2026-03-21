@@ -87,14 +87,6 @@ export const OrderResponseSchema = z.object({
 
 export type OrderResponse = z.infer<typeof OrderResponseSchema>;
 
-// --- Sealify Response ---
-
-export const SealInvoiceResponseSchema = z.object({
-  sealedData: z.string(),
-});
-
-export type SealInvoiceResponse = z.infer<typeof SealInvoiceResponseSchema>;
-
 // --- Kafka Message Schemas ---
 
 export const OrderMessageSchema = z

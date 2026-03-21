@@ -8,9 +8,12 @@ export interface AppConfig {
   };
   externalServices: {
     core: Endpoint;
-    sealify: Endpoint;
     sriVoucherWsdl: string;
     sriQueryWsdl: string;
+  };
+  signing: {
+    p12Path: string;
+    p12Password: string;
   };
   kafka: {
     brokers: string[];

@@ -11,10 +11,6 @@ export default {
       host: 'http://localhost:8000',
       timeout: 1000,
     },
-    sealify: {
-      host: 'http://localhost:3000',
-      timeout: 1000,
-    },
     sriVoucherWsdl:
       'https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl',
     sriQueryWsdl:
@@ -31,6 +27,10 @@ export default {
         invoices: 'invoices',
       },
     },
+  },
+  signing: {
+    p12Path: process.env.SIGNING_P12_PATH || './certs/signing.p12',
+    p12Password: process.env.SIGNING_P12_PASSWORD || '',
   },
   timezone: 'America/Guayaquil',
   environment: 'local',
