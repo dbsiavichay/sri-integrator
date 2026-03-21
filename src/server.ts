@@ -1,6 +1,5 @@
-import { initKakfaConsumers } from './deps';
+import { createContainer } from './container';
 import { initLogger, logger } from '#/shared/logger';
-
 import loadConfig from './config';
 
 const main = async () => {
@@ -10,13 +9,18 @@ const main = async () => {
     serviceName: config.serviceName,
     environment: config.environment,
   });
-  const { kafkaConsumer, kafkaProducer } = await initKakfaConsumers(config);
-  await kafkaConsumer.start();
+
+  const { consumer, producer } = await createContainer(config);
+  await consumer.start();
 
   const shutdown = async () => {
     logger.info('Shutting down...');
-    await kafkaConsumer.stop();
-    await kafkaProducer.disconnect();
+    try {
+      await consumer.stop();
+      await producer.disconnect();
+    } catch (error) {
+      logger.error({ error }, 'Error during shutdown');
+    }
     process.exit(0);
   };
 
@@ -24,7 +28,7 @@ const main = async () => {
   process.on('SIGINT', shutdown);
 };
 
-main().catch(async (error) => {
+main().catch((error) => {
   logger.error(
     { error: error instanceof Error ? error.message : String(error) },
     'Application error',

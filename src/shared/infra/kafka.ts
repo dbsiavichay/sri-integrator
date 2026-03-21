@@ -27,6 +27,7 @@ export abstract class BaseKafkaConsumer {
   }
 
   async stop(): Promise<void> {
+    await this.consumer.stop();
     await this.consumer.disconnect();
   }
 }
