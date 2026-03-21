@@ -1,0 +1,46 @@
+import { Invoice, InvoiceStatus, InvoiceStatusHistory } from '../../domain/invoice';
+
+export interface InvoiceRecord {
+  id: string;
+  orderId: string;
+  accessCode: string;
+  status: string;
+  signatureId: string;
+  xml: string;
+  statusHistory: {
+    name: string;
+    statusDate: string;
+    description?: string;
+  }[];
+}
+
+export function toInvoiceRecord(entity: Invoice): InvoiceRecord {
+  return {
+    id: entity.id,
+    orderId: entity.orderId,
+    accessCode: entity.accessCode,
+    status: entity.status,
+    signatureId: entity.signatureId,
+    xml: entity.xml,
+    statusHistory: entity.statusHistory.map((h) => ({
+      name: h.name,
+      statusDate: h.statusDate.toISOString(),
+      description: h.description ?? '',
+    })),
+  };
+}
+
+export function fromInvoiceRecord(record: InvoiceRecord): Invoice {
+  return new Invoice(
+    record.id,
+    record.orderId,
+    record.accessCode,
+    record.status as InvoiceStatus,
+    record.signatureId,
+    record.xml,
+    record.statusHistory.map(
+      (h) =>
+        new InvoiceStatusHistory(h.name as InvoiceStatus, new Date(h.statusDate), h.description),
+    ),
+  );
+}

@@ -1,26 +1,29 @@
-import {
-  CoreAdapter,
-  KafkaConsumer,
-  KafkaProducer,
-  SealifyAdapter,
-  SriAuthorizationAdapter,
-  SriValidationAdapter,
-} from '#/modules/infra/adapters';
-import {
-  InvoiceMessageSchema,
-  OrderMessageSchema,
-  OrderResponseSchema,
-  SealInvoiceResponseSchema,
-} from '#/modules/infra/validators';
-import { ProcessInvoiceMessage, ProcessOrderMessage } from '#/modules/app/usecase';
-
 import { AppConfig } from '#/config';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { DynamoInvoiceRepository } from '#/modules/infra/repositories';
-import { KAFKA_TOPICS } from './enums';
 import { Kafka } from 'kafkajs';
 import { SoapClient } from '#/shared/infra/soap-client';
+
+import { CoreAdapter } from '#/modules/invoice/infra/adapters/core.adapter';
+import { SealifyAdapter } from '#/modules/invoice/infra/adapters/sealify.adapter';
+import { SriValidationAdapter } from '#/modules/invoice/infra/adapters/sri-validation.adapter';
+import { SriAuthorizationAdapter } from '#/modules/invoice/infra/adapters/sri-authorization.adapter';
+import { DynamoInvoiceRepository } from '#/modules/invoice/infra/persistence/dynamo-invoice.repository';
+import { KafkaProducer } from '#/modules/invoice/infra/messaging/kafka-producer';
+import { InvoiceKafkaConsumer } from '#/modules/invoice/infra/messaging/kafka-consumer';
+import {
+  OrderResponseSchema,
+  SealInvoiceResponseSchema,
+  OrderMessageSchema,
+  InvoiceMessageSchema,
+} from '#/modules/invoice/infra/messaging/schemas';
+import { KAFKA_TOPICS } from '#/modules/invoice/infra/messaging/topics';
+import { CreateInvoiceCommand } from '#/modules/invoice/app/commands/create-invoice';
+import { SignInvoiceCommand } from '#/modules/invoice/app/commands/sign-invoice';
+import { SendInvoiceCommand } from '#/modules/invoice/app/commands/send-invoice';
+import { AuthorizeInvoiceCommand } from '#/modules/invoice/app/commands/authorize-invoice';
+import { OrderMessageHandler } from '#/modules/invoice/app/handlers/order-message.handler';
+import { InvoiceMessageHandler } from '#/modules/invoice/app/handlers/invoice-message.handler';
 
 export async function initKakfaConsumers(config: AppConfig) {
   // External services
@@ -55,31 +58,52 @@ export async function initKakfaConsumers(config: AppConfig) {
   // Producers
   const invoiceProducer = new KafkaProducer(producer, KAFKA_TOPICS.INVOICES);
 
-  // Use cases
-  const processOrderMessage = new ProcessOrderMessage(
+  // Commands
+  const createInvoiceCommand = new CreateInvoiceCommand(
     coreAdapter,
     invoiceRepository,
     invoiceProducer,
   );
-  const processInvoiceMessage = new ProcessInvoiceMessage(
+  const signInvoiceCommand = new SignInvoiceCommand(
     sealifyAdapter,
+    invoiceRepository,
+    invoiceProducer,
+  );
+  const sendInvoiceCommand = new SendInvoiceCommand(
     sriValidationAdapter,
+    invoiceRepository,
+    invoiceProducer,
+  );
+  const authorizeInvoiceCommand = new AuthorizeInvoiceCommand(
     sriAuthorizationAdapter,
     invoiceRepository,
     invoiceProducer,
   );
 
-  // Consumers
-  const kakfaConsumer = new KafkaConsumer(consumer, [KAFKA_TOPICS.ORDERS, KAFKA_TOPICS.INVOICES], {
-    orders: {
-      usecase: processOrderMessage,
-      validator: OrderMessageSchema,
-    },
-    invoices: {
-      usecase: processInvoiceMessage,
-      validator: InvoiceMessageSchema,
-    },
-  });
+  // Handlers
+  const orderMessageHandler = new OrderMessageHandler(createInvoiceCommand);
+  const invoiceMessageHandler = new InvoiceMessageHandler(
+    invoiceRepository,
+    signInvoiceCommand,
+    sendInvoiceCommand,
+    authorizeInvoiceCommand,
+  );
 
-  return { kakfaConsumer };
+  // Consumer
+  const kafkaConsumer = new InvoiceKafkaConsumer(
+    consumer,
+    [KAFKA_TOPICS.ORDERS, KAFKA_TOPICS.INVOICES],
+    {
+      [KAFKA_TOPICS.ORDERS]: {
+        handler: orderMessageHandler,
+        validator: OrderMessageSchema,
+      },
+      [KAFKA_TOPICS.INVOICES]: {
+        handler: invoiceMessageHandler,
+        validator: InvoiceMessageSchema,
+      },
+    },
+  );
+
+  return { kafkaConsumer };
 }
