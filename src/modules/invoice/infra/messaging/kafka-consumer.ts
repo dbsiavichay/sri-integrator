@@ -24,11 +24,12 @@ export class InvoiceKafkaConsumer extends BaseKafkaConsumer {
       return;
     }
 
-    const result = processor.validator.safeParse(JSON.parse(message));
+    const parsed = JSON.parse(message);
+    const result = processor.validator.safeParse(parsed);
 
     if (!result.success) {
-      logger.error({ topic, issues: result.error.issues }, 'Invalid message schema');
-      throw new Error(result.error.issues.map((i) => i.message).join(', '));
+      logger.error({ topic, issues: result.error.issues }, 'Invalid message schema, skipping');
+      return;
     }
 
     await processor.handler.handle(result.data);

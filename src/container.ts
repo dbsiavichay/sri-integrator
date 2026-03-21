@@ -49,7 +49,10 @@ export async function createContainer(config: AppConfig) {
       },
   });
   const consumer = kafka.consumer({ groupId: config.kafka.groupId });
-  const producer = kafka.producer();
+  const producer = kafka.producer({
+    idempotent: true,
+    maxInFlightRequests: 5,
+  });
 
   const ddbClient = new DynamoDBClient({ region: config.aws.region });
   const docClient = DynamoDBDocumentClient.from(ddbClient);
