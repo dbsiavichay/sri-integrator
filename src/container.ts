@@ -25,8 +25,8 @@ import { AuthorizeInvoiceCommand } from '#/modules/invoice/app/commands/authoriz
 import { OrderMessageHandler } from '#/modules/invoice/app/handlers/order-message.handler';
 import { InvoiceMessageHandler } from '#/modules/invoice/app/handlers/invoice-message.handler';
 
-export async function initKakfaConsumers(config: AppConfig) {
-  // External services
+export async function createContainer(config: AppConfig) {
+  // Infra clients
   const kafka = new Kafka({
     clientId: 'sri-integrator',
     brokers: config.kafka.brokers,
@@ -40,6 +40,12 @@ export async function initKakfaConsumers(config: AppConfig) {
   const validationClient = new SoapClient(config.externalServices.sriVoucherWsdl);
   const authorizationClient = new SoapClient(config.externalServices.sriQueryWsdl);
 
+  // Repositories
+  const invoiceRepository = new DynamoInvoiceRepository(
+    docClient,
+    config.aws.dynamoDb.tables.invoices,
+  );
+
   // Adapters
   const coreAdapter = new CoreAdapter(config.externalServices.core, OrderResponseSchema);
   const sealifyAdapter = new SealifyAdapter(
@@ -48,12 +54,6 @@ export async function initKakfaConsumers(config: AppConfig) {
   );
   const sriValidationAdapter = new SriValidationAdapter(validationClient);
   const sriAuthorizationAdapter = new SriAuthorizationAdapter(authorizationClient);
-
-  // Repositories
-  const invoiceRepository = new DynamoInvoiceRepository(
-    docClient,
-    config.aws.dynamoDb.tables.invoices,
-  );
 
   // Producers
   const invoiceProducer = new KafkaProducer(producer, KAFKA_TOPICS.INVOICES);
@@ -95,5 +95,5 @@ export async function initKakfaConsumers(config: AppConfig) {
 
   await invoiceProducer.connect();
 
-  return { kafkaConsumer, kafkaProducer: invoiceProducer };
+  return { consumer: kafkaConsumer, producer: invoiceProducer };
 }
