@@ -1,4 +1,4 @@
-import { Consumer } from 'kafkajs';
+import { KafkaJS } from '@confluentinc/kafka-javascript';
 import { ZodSchema } from 'zod';
 
 import { BaseKafkaConsumer } from '#/shared/infra/kafka';
@@ -10,7 +10,7 @@ interface MessageProcessor {
 
 export class InvoiceKafkaConsumer extends BaseKafkaConsumer {
   constructor(
-    consumer: Consumer,
+    consumer: KafkaJS.Consumer,
     topics: string[],
     private processors: Record<string, { handler: MessageProcessor; validator: ZodSchema }>,
   ) {

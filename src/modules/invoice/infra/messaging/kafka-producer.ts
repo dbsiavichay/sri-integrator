@@ -1,4 +1,4 @@
-import { Producer } from 'kafkajs';
+import { KafkaJS } from '@confluentinc/kafka-javascript';
 
 import { logger } from '#/shared/logger';
 
@@ -6,7 +6,7 @@ import { MessageProducer } from '../../domain/ports';
 
 export class KafkaProducer<T> implements MessageProducer<T> {
   constructor(
-    private producer: Producer,
+    private producer: KafkaJS.Producer,
     private topic: string,
   ) {}
 
