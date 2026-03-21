@@ -10,11 +10,12 @@ import {
 } from '#/modules/domain/ports';
 import { OrderResponse, SealInvoiceResponse } from '../validators';
 
-import { BaseHttpClient } from '../http';
-import { BaseKafkaConsumer } from '../kafka';
-import { Endpoint } from '#/modules/domain/types';
+import { BaseHttpClient } from '#/shared/infra/http-client';
+import { BaseKafkaConsumer } from '#/shared/infra/kafka';
+import { Endpoint } from '#/shared/types';
 import { ProcessMessageUseCase } from '#/modules/app/usecase';
-import { SoapClient } from '../soap';
+import { SoapClient } from '#/shared/infra/soap-client';
+import { logger } from '#/shared/logger';
 import { ZodSchema } from 'zod';
 import { mapOrderToDomain } from '#/modules/app/mappers/core';
 import { mapValidationVoucherToDomain } from '#/modules/app/mappers/sri';
@@ -35,14 +36,14 @@ export class KafkaConsumer extends BaseKafkaConsumer {
   protected async handleMessage(topic: string, message: string): Promise<void> {
     const processor = this.processors[topic];
     if (!processor) {
-      console.warn(`No processor defined for topic: ${topic}`);
+      logger.warn({ topic }, 'No processor defined for topic');
       return;
     }
 
     const result = processor.validator.safeParse(JSON.parse(message));
 
     if (!result.success) {
-      console.error(result.error.stack);
+      logger.error({ error: result.error.stack }, 'Invalid message schema');
       throw new Error(result.error.errors.join(', '));
     }
 
@@ -62,7 +63,7 @@ export class KafkaProducer<T> implements MessageProducer<T> {
       topic: this.topic,
       messages: [{ value: JSON.stringify(message) }],
     });
-    console.log(`Message sent to ${this.topic}: ${JSON.stringify(message)}`);
+    logger.info({ topic: this.topic, message }, 'Message sent');
     await this.producer.disconnect();
   }
 }
@@ -79,7 +80,7 @@ export class CoreAdapter extends BaseHttpClient implements CorePort {
     const response = await this.get(`/api/invoice/${orderId}/`);
     const parsedResponse = this.validator.safeParse(response.data);
     if (parsedResponse.error) {
-      console.log(`ERRORS: ${parsedResponse.error.stack}`);
+      logger.error({ error: parsedResponse.error.stack }, 'Invalid order response');
       throw new Error(parsedResponse.error.errors.join(', '));
     }
     return mapOrderToDomain(parsedResponse.data);

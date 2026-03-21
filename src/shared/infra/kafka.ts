@@ -1,4 +1,5 @@
 import { Consumer } from 'kafkajs';
+import { logger } from '../logger';
 
 export abstract class BaseKafkaConsumer {
   constructor(
@@ -18,7 +19,7 @@ export abstract class BaseKafkaConsumer {
     await this.consumer.run({
       eachMessage: async ({ topic, message }) => {
         if (message.value) {
-          console.log(`📥 Kafka message from ${topic}: ${message.value.toString()}`);
+          logger.info({ topic, message: message.value.toString() }, 'Kafka message received');
           await this.handleMessage(topic, message.value.toString());
         }
       },

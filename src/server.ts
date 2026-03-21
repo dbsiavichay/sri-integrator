@@ -1,15 +1,20 @@
-import { initKakfaConsumers, initLogger, getLogger } from './deps';
+import { initKakfaConsumers } from './deps';
+import { initLogger, logger } from '#/shared/logger';
 
 import loadConfig from './config';
 
 const main = async () => {
   const config = await loadConfig();
-  const logger = initLogger(config);
+  initLogger({
+    level: config.logger.level,
+    serviceName: config.serviceName,
+    environment: config.environment,
+  });
   const { kakfaConsumer } = await initKakfaConsumers(config);
   await kakfaConsumer.start();
 
   const shutdown = async () => {
-    logger.info('Cerrando aplicación...');
+    logger.info('Shutting down...');
     //await kakfaConsumer.stop();
     process.exit(0);
   };
@@ -19,9 +24,9 @@ const main = async () => {
 };
 
 main().catch(async (error) => {
-  const logger = getLogger();
-  logger.error('Error en la aplicación', {
-    error: error instanceof Error ? error.message : String(error),
-  });
+  logger.error(
+    { error: error instanceof Error ? error.message : String(error) },
+    'Application error',
+  );
   process.exit(1);
 });

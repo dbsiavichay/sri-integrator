@@ -1,4 +1,4 @@
-import { Endpoint } from '#/modules/domain/types';
+import { Endpoint } from '#/shared/types';
 
 export interface AppConfig {
   serviceName: string;
