@@ -21,8 +21,8 @@ export class CoreAdapter extends BaseHttpClient implements CorePort {
     const response = await this.get(`/api/invoice/${orderId}/`);
     const parsedResponse = this.validator.safeParse(response.data);
     if (parsedResponse.error) {
-      logger.error({ error: parsedResponse.error.stack }, 'Invalid order response');
-      throw new Error(parsedResponse.error.errors.join(', '));
+      logger.error({ orderId, issues: parsedResponse.error.issues }, 'Invalid order response');
+      throw new Error(parsedResponse.error.issues.map((i) => i.message).join(', '));
     }
     return mapOrderToDomain(parsedResponse.data);
   }

@@ -27,8 +27,8 @@ export class InvoiceKafkaConsumer extends BaseKafkaConsumer {
     const result = processor.validator.safeParse(JSON.parse(message));
 
     if (!result.success) {
-      logger.error({ error: result.error.stack }, 'Invalid message schema');
-      throw new Error(result.error.errors.join(', '));
+      logger.error({ topic, issues: result.error.issues }, 'Invalid message schema');
+      throw new Error(result.error.issues.map((i) => i.message).join(', '));
     }
 
     await processor.handler.handle(result.data);

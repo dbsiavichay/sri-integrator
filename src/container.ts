@@ -1,6 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { Kafka } from 'kafkajs';
+import { Kafka, logLevel as KafkaLogLevel } from 'kafkajs';
+import pino from 'pino';
 
 import { AppConfig } from '#/config';
 import { AuthorizeInvoiceCommand } from '#/modules/invoice/app/commands/authorize-invoice';
@@ -24,12 +25,28 @@ import {
 import { KAFKA_TOPICS } from '#/modules/invoice/infra/messaging/topics';
 import { DynamoInvoiceRepository } from '#/modules/invoice/infra/persistence/dynamo-invoice.repository';
 import { SoapClient } from '#/shared/infra/soap-client';
+import { logger } from '#/shared/logger';
 
 export async function createContainer(config: AppConfig) {
   // Infra clients
+  const kafkaLogLevelMap: Record<number, string> = {
+    [KafkaLogLevel.ERROR]: 'error',
+    [KafkaLogLevel.WARN]: 'warn',
+    [KafkaLogLevel.INFO]: 'info',
+    [KafkaLogLevel.DEBUG]: 'debug',
+    [KafkaLogLevel.NOTHING]: 'silent',
+  };
+
   const kafka = new Kafka({
     clientId: 'sri-integrator',
     brokers: config.kafka.brokers,
+    logCreator:
+      () =>
+      ({ level, log }) => {
+        const pinoLevel = (kafkaLogLevelMap[level] ?? 'info') as pino.Level;
+        const { message, ...extra } = log;
+        logger[pinoLevel]({ ...extra, kafka: true }, message);
+      },
   });
   const consumer = kafka.consumer({ groupId: config.kafka.groupId });
   const producer = kafka.producer();

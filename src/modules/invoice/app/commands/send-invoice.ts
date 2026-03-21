@@ -1,3 +1,5 @@
+import { logger } from '#/shared/logger';
+
 import { Invoice, InvoiceStatus } from '../../domain/invoice';
 import { SriValidationPort } from '../../domain/ports';
 import { InvoiceRepository } from '../../domain/repository';
@@ -10,6 +12,7 @@ export class SendInvoiceCommand {
   ) {}
 
   async execute(invoice: Invoice): Promise<void> {
+    logger.info({ invoiceId: invoice.id }, 'Sending invoice to SRI');
     const validationVoucher = await this.sriValidationPort.validateXml(invoice.xml);
     const invoiceStatus =
       validationVoucher.status === ValidationVoucherStatus.ACCEPTED
@@ -17,5 +20,6 @@ export class SendInvoiceCommand {
         : InvoiceStatus.REJECTED;
     invoice.addStatusHistory(invoiceStatus, new Date(), validationVoucher.messages.join(' >> '));
     await this.invoiceRepository.updateInvoice(invoice);
+    logger.info({ invoiceId: invoice.id, status: invoiceStatus }, 'Invoice sent to SRI');
   }
 }

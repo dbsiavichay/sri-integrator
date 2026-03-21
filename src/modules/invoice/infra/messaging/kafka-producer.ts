@@ -23,6 +23,6 @@ export class KafkaProducer<T> implements MessageProducer<T> {
       topic: this.topic,
       messages: [{ value: JSON.stringify(message) }],
     });
-    logger.info({ topic: this.topic, message }, 'Message sent');
+    logger.debug({ topic: this.topic }, 'Message sent');
   }
 }

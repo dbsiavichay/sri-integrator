@@ -1,6 +1,11 @@
 import { AppConfig } from './index';
 
 export default {
+  serviceName: 'sri-integrator',
+  serviceVersion: '1.0.0',
+  logger: {
+    level: 'info',
+  },
   externalServices: {
     core: {
       host: 'http://localhost:8000',

@@ -20,8 +20,12 @@ export abstract class BaseKafkaConsumer {
     await this.consumer.run({
       eachMessage: async ({ topic, message }) => {
         if (message.value) {
-          logger.info({ topic, message: message.value.toString() }, 'Kafka message received');
-          await this.handleMessage(topic, message.value.toString());
+          const value = message.value.toString();
+          logger.debug(
+            { topic, key: message.key?.toString(), size: value.length },
+            'Kafka message received',
+          );
+          await this.handleMessage(topic, value);
         }
       },
     });

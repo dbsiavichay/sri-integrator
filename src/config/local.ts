@@ -5,7 +5,6 @@ export default {
   serviceVersion: '1.0.0',
   logger: {
     level: 'debug',
-    prettyPrint: true,
   },
   externalServices: {
     core: {
