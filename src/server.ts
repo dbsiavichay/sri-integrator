@@ -13,6 +13,7 @@ const main = async () => {
 
   const { consumer, producer } = await createContainer(config);
   await consumer.start();
+  logger.info({ env: config.environment }, 'Application started');
 
   const shutdown = async () => {
     logger.info('Shutting down...');

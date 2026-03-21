@@ -5,7 +5,6 @@ export interface AppConfig {
   serviceVersion: string;
   logger: {
     level: string;
-    prettyPrint: boolean;
   };
   externalServices: {
     core: Endpoint;
