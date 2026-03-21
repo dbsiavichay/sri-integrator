@@ -1,7 +1,9 @@
+import { InvoiceDomainEvent } from '../../domain/events';
 import { InvoiceStatus } from '../../domain/invoice';
+import { MessageProducer } from '../../domain/ports';
 import { InvoiceRepository } from '../../domain/repository';
+import { InvoiceMessage } from '../../infra/messaging/schemas';
 import { AuthorizeInvoiceCommand } from '../commands/authorize-invoice';
-import { InvoiceMessage } from '../commands/create-invoice';
 import { SendInvoiceCommand } from '../commands/send-invoice';
 import { SignInvoiceCommand } from '../commands/sign-invoice';
 import { logger } from '#/shared/logger';
@@ -12,17 +14,18 @@ export class InvoiceMessageHandler {
     private signInvoiceCommand: SignInvoiceCommand,
     private sendInvoiceCommand: SendInvoiceCommand,
     private authorizeInvoiceCommand: AuthorizeInvoiceCommand,
+    private messageProducer: MessageProducer<InvoiceDomainEvent>,
   ) {}
 
   async handle(message: InvoiceMessage): Promise<void> {
-    const invoice = await this.invoiceRepository.getInvoiceById(message.id);
+    const invoice = await this.invoiceRepository.getInvoiceById(message.invoiceId);
     if (!invoice) {
-      logger.warn({ invoiceId: message.id }, 'Invoice not found');
+      logger.warn({ invoiceId: message.invoiceId }, 'Invoice not found');
       return;
     }
 
     if ([InvoiceStatus.REJECTED, InvoiceStatus.AUTHORIZED].includes(invoice.status)) {
-      logger.warn({ invoiceId: message.id }, 'Invoice already processed');
+      logger.warn({ invoiceId: message.invoiceId }, 'Invoice already processed');
       return;
     }
 
@@ -32,6 +35,10 @@ export class InvoiceMessageHandler {
       await this.sendInvoiceCommand.execute(invoice);
     } else if (invoice.status === InvoiceStatus.SENT) {
       await this.authorizeInvoiceCommand.execute(invoice);
+    }
+
+    for (const event of invoice.pullEvents()) {
+      await this.messageProducer.sendMessage(event);
     }
   }
 }
