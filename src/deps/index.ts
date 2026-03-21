@@ -59,34 +59,22 @@ export async function initKakfaConsumers(config: AppConfig) {
   const invoiceProducer = new KafkaProducer(producer, KAFKA_TOPICS.INVOICES);
 
   // Commands
-  const createInvoiceCommand = new CreateInvoiceCommand(
-    coreAdapter,
-    invoiceRepository,
-    invoiceProducer,
-  );
-  const signInvoiceCommand = new SignInvoiceCommand(
-    sealifyAdapter,
-    invoiceRepository,
-    invoiceProducer,
-  );
-  const sendInvoiceCommand = new SendInvoiceCommand(
-    sriValidationAdapter,
-    invoiceRepository,
-    invoiceProducer,
-  );
+  const createInvoiceCommand = new CreateInvoiceCommand(coreAdapter, invoiceRepository);
+  const signInvoiceCommand = new SignInvoiceCommand(sealifyAdapter, invoiceRepository);
+  const sendInvoiceCommand = new SendInvoiceCommand(sriValidationAdapter, invoiceRepository);
   const authorizeInvoiceCommand = new AuthorizeInvoiceCommand(
     sriAuthorizationAdapter,
     invoiceRepository,
-    invoiceProducer,
   );
 
   // Handlers
-  const orderMessageHandler = new OrderMessageHandler(createInvoiceCommand);
+  const orderMessageHandler = new OrderMessageHandler(createInvoiceCommand, invoiceProducer);
   const invoiceMessageHandler = new InvoiceMessageHandler(
     invoiceRepository,
     signInvoiceCommand,
     sendInvoiceCommand,
     authorizeInvoiceCommand,
+    invoiceProducer,
   );
 
   // Consumer
@@ -105,5 +93,7 @@ export async function initKakfaConsumers(config: AppConfig) {
     },
   );
 
-  return { kafkaConsumer };
+  await invoiceProducer.connect();
+
+  return { kafkaConsumer, kafkaProducer: invoiceProducer };
 }

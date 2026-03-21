@@ -1,3 +1,4 @@
+import { AccessCode } from '../../domain/access-code';
 import { Invoice, InvoiceStatus, InvoiceStatusHistory } from '../../domain/invoice';
 
 export interface InvoiceRecord {
@@ -18,7 +19,7 @@ export function toInvoiceRecord(entity: Invoice): InvoiceRecord {
   return {
     id: entity.id,
     orderId: entity.orderId,
-    accessCode: entity.accessCode,
+    accessCode: entity.accessCode.value,
     status: entity.status,
     signatureId: entity.signatureId,
     xml: entity.xml,
@@ -34,7 +35,7 @@ export function fromInvoiceRecord(record: InvoiceRecord): Invoice {
   return new Invoice(
     record.id,
     record.orderId,
-    record.accessCode,
+    AccessCode.create(record.accessCode),
     record.status as InvoiceStatus,
     record.signatureId,
     record.xml,

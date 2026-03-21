@@ -8,13 +8,19 @@ export class KafkaProducer<T> implements MessageProducer<T> {
     private topic: string,
   ) {}
 
-  async sendMessage(message: T): Promise<void> {
+  async connect(): Promise<void> {
     await this.producer.connect();
+  }
+
+  async disconnect(): Promise<void> {
+    await this.producer.disconnect();
+  }
+
+  async sendMessage(message: T): Promise<void> {
     await this.producer.send({
       topic: this.topic,
       messages: [{ value: JSON.stringify(message) }],
     });
     logger.info({ topic: this.topic, message }, 'Message sent');
-    await this.producer.disconnect();
   }
 }

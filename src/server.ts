@@ -10,12 +10,13 @@ const main = async () => {
     serviceName: config.serviceName,
     environment: config.environment,
   });
-  const { kafkaConsumer } = await initKakfaConsumers(config);
+  const { kafkaConsumer, kafkaProducer } = await initKakfaConsumers(config);
   await kafkaConsumer.start();
 
   const shutdown = async () => {
     logger.info('Shutting down...');
-    //await kafkaConsumer.stop();
+    await kafkaConsumer.stop();
+    await kafkaProducer.disconnect();
     process.exit(0);
   };
 

@@ -96,14 +96,26 @@ export type SealInvoiceResponse = z.infer<typeof SealInvoiceResponseSchema>;
 
 // --- Kafka Message Schemas ---
 
-export const OrderMessageSchema = z.object({
-  id: z.number(),
-  access_code: z.string(),
-  sequence: z.string(),
-});
+export const OrderMessageSchema = z
+  .object({
+    id: z.number(),
+    access_code: z.string(),
+    sequence: z.string(),
+  })
+  .transform((data) => ({
+    id: data.id,
+    accessCode: data.access_code,
+    sequence: data.sequence,
+  }));
+
+export type OrderMessage = z.infer<typeof OrderMessageSchema>;
 
 export const InvoiceMessageSchema = z.object({
-  id: z.string(),
+  type: z.string(),
+  invoiceId: z.string(),
   orderId: z.string(),
   status: z.nativeEnum(InvoiceStatus),
+  occurredAt: z.coerce.date(),
 });
+
+export type InvoiceMessage = z.infer<typeof InvoiceMessageSchema>;
