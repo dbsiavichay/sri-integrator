@@ -1,8 +1,10 @@
+import { ZodSchema } from 'zod';
+
 import { BaseHttpClient } from '#/shared/infra/http-client';
 import { Endpoint } from '#/shared/types';
+
 import { SealifyPort } from '../../domain/ports';
 import { SealInvoiceResponse } from '../messaging/schemas';
-import { ZodSchema } from 'zod';
 
 export class SealifyAdapter extends BaseHttpClient implements SealifyPort {
   constructor(

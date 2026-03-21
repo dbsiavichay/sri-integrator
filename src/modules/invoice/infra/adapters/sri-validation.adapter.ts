@@ -1,4 +1,5 @@
 import { SoapClient } from '#/shared/infra/soap-client';
+
 import { SriValidationPort } from '../../domain/ports';
 import { ValidationVoucher } from '../../domain/voucher';
 import {
@@ -11,9 +12,9 @@ export class SriValidationAdapter implements SriValidationPort {
 
   async validateXml(xml: string): Promise<ValidationVoucher> {
     xml = Buffer.from(xml, 'utf-8').toString('base64');
-    const response = await this.validateClient.callMethod('validarComprobante', { xml });
-    return mapValidationVoucherToDomain(
-      response.RespuestaRecepcionComprobante as ReceiptVoucherResponseDTO,
-    );
+    const response = (await this.validateClient.callMethod('validarComprobante', {
+      xml,
+    })) as { RespuestaRecepcionComprobante: ReceiptVoucherResponseDTO };
+    return mapValidationVoucherToDomain(response.RespuestaRecepcionComprobante);
   }
 }

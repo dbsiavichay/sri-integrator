@@ -88,8 +88,8 @@ export class Order {
     public tax: number,
     public total: number,
     public status: string,
-    public file: any | null,
-    public errors: Record<string, any>,
+    public file: unknown,
+    public errors: Record<string, unknown>,
     public customer: Customer,
   ) {}
 
@@ -143,10 +143,33 @@ function getInvoiceData(order: Order) {
         propina: 0,
         importeTotal: order.total,
         moneda: 'DOLAR',
-        pagos: { pago: [] as any[] },
+        pagos: {
+          pago: [] as { formaPago: string; total: number; plazo: number; unidadTiempo: string }[],
+        },
       },
-      detalles: { detalle: [] as any[] },
-      infoAdicional: { campoAdicional: [] as any[] },
+      detalles: {
+        detalle: [] as {
+          codigoPrincipal: string;
+          codigoAuxiliar: string;
+          descripcion: string;
+          cantidad: number;
+          precioUnitario: number;
+          descuento: number;
+          precioTotalSinImpuesto: number;
+          impuestos: {
+            impuesto: {
+              codigo: number;
+              codigoPorcentaje: number;
+              tarifa: number;
+              baseImponible: number;
+              valor: number;
+            }[];
+          };
+        }[],
+      },
+      infoAdicional: {
+        campoAdicional: [] as { '@nombre': string; '#text': string }[],
+      },
     },
   };
 

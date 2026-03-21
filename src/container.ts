@@ -1,29 +1,29 @@
-import { AppConfig } from '#/config';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { Kafka } from 'kafkajs';
-import { SoapClient } from '#/shared/infra/soap-client';
 
+import { AppConfig } from '#/config';
+import { AuthorizeInvoiceCommand } from '#/modules/invoice/app/commands/authorize-invoice';
+import { CreateInvoiceCommand } from '#/modules/invoice/app/commands/create-invoice';
+import { SendInvoiceCommand } from '#/modules/invoice/app/commands/send-invoice';
+import { SignInvoiceCommand } from '#/modules/invoice/app/commands/sign-invoice';
+import { InvoiceMessageHandler } from '#/modules/invoice/app/handlers/invoice-message.handler';
+import { OrderMessageHandler } from '#/modules/invoice/app/handlers/order-message.handler';
 import { CoreAdapter } from '#/modules/invoice/infra/adapters/core.adapter';
 import { SealifyAdapter } from '#/modules/invoice/infra/adapters/sealify.adapter';
-import { SriValidationAdapter } from '#/modules/invoice/infra/adapters/sri-validation.adapter';
 import { SriAuthorizationAdapter } from '#/modules/invoice/infra/adapters/sri-authorization.adapter';
-import { DynamoInvoiceRepository } from '#/modules/invoice/infra/persistence/dynamo-invoice.repository';
-import { KafkaProducer } from '#/modules/invoice/infra/messaging/kafka-producer';
+import { SriValidationAdapter } from '#/modules/invoice/infra/adapters/sri-validation.adapter';
 import { InvoiceKafkaConsumer } from '#/modules/invoice/infra/messaging/kafka-consumer';
+import { KafkaProducer } from '#/modules/invoice/infra/messaging/kafka-producer';
 import {
+  InvoiceMessageSchema,
+  OrderMessageSchema,
   OrderResponseSchema,
   SealInvoiceResponseSchema,
-  OrderMessageSchema,
-  InvoiceMessageSchema,
 } from '#/modules/invoice/infra/messaging/schemas';
 import { KAFKA_TOPICS } from '#/modules/invoice/infra/messaging/topics';
-import { CreateInvoiceCommand } from '#/modules/invoice/app/commands/create-invoice';
-import { SignInvoiceCommand } from '#/modules/invoice/app/commands/sign-invoice';
-import { SendInvoiceCommand } from '#/modules/invoice/app/commands/send-invoice';
-import { AuthorizeInvoiceCommand } from '#/modules/invoice/app/commands/authorize-invoice';
-import { OrderMessageHandler } from '#/modules/invoice/app/handlers/order-message.handler';
-import { InvoiceMessageHandler } from '#/modules/invoice/app/handlers/invoice-message.handler';
+import { DynamoInvoiceRepository } from '#/modules/invoice/infra/persistence/dynamo-invoice.repository';
+import { SoapClient } from '#/shared/infra/soap-client';
 
 export async function createContainer(config: AppConfig) {
   // Infra clients

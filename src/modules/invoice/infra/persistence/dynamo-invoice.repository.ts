@@ -1,7 +1,8 @@
 import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
+
 import { Invoice } from '../../domain/invoice';
 import { InvoiceRepository } from '../../domain/repository';
-import { InvoiceRecord, fromInvoiceRecord, toInvoiceRecord } from './invoice.mapper';
+import { fromInvoiceRecord, InvoiceRecord, toInvoiceRecord } from './invoice.mapper';
 
 export class DynamoInvoiceRepository implements InvoiceRepository {
   constructor(

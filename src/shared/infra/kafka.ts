@@ -1,4 +1,5 @@
 import { Consumer } from 'kafkajs';
+
 import { logger } from '../logger';
 
 export abstract class BaseKafkaConsumer {
