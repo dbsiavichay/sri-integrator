@@ -14,18 +14,31 @@ export abstract class BaseKafkaConsumer {
     await this.consumer.connect();
 
     for (const topic of this.topics) {
-      await this.consumer.subscribe({ topic, fromBeginning: true });
+      await this.consumer.subscribe({ topic, fromBeginning: false });
     }
 
     await this.consumer.run({
-      eachMessage: async ({ topic, message }) => {
+      eachMessage: async ({ topic, partition, message }) => {
         if (message.value) {
           const value = message.value.toString();
           logger.debug(
-            { topic, key: message.key?.toString(), size: value.length },
+            {
+              topic,
+              partition,
+              offset: message.offset,
+              key: message.key?.toString(),
+              size: value.length,
+            },
             'Kafka message received',
           );
-          await this.handleMessage(topic, value);
+          try {
+            await this.handleMessage(topic, value);
+          } catch (error) {
+            logger.error(
+              { topic, partition, offset: message.offset, error },
+              'Failed to process message, skipping',
+            );
+          }
         }
       },
     });
