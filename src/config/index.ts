@@ -8,7 +8,6 @@ export interface AppConfig {
     prettyPrint: boolean;
   };
   externalServices: {
-    otelCollector: Endpoint;
     core: Endpoint;
     sealify: Endpoint;
     sriVoucherWsdl: string;

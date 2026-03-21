@@ -8,10 +8,6 @@ export default {
     prettyPrint: true,
   },
   externalServices: {
-    otelCollector: {
-      host: 'http://localhost:4318',
-      timeout: 1000,
-    },
     core: {
       host: 'http://localhost:8000',
       timeout: 1000,

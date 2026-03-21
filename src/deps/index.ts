@@ -1,10 +1,3 @@
-import 'reflect-metadata';
-import '../modules/app/mappers/core';
-import '../modules/app/mappers/sri';
-import '../modules/app/mappers/invoice';
-import '../modules/app/mappers/message';
-
-import { AuthorizationVoucherMapper, ValidationVoucherMapper } from '../modules/app/mappers/sri';
 import {
   CoreAdapter,
   KafkaConsumer,
@@ -13,7 +6,6 @@ import {
   SriAuthorizationAdapter,
   SriValidationAdapter,
 } from '#/modules/infra/adapters';
-import { InvoiceMessageMapper, OrderMessageMapper } from '../modules/app/mappers/message';
 import {
   InvoiceMessageSchema,
   OrderMessageSchema,
@@ -26,14 +18,10 @@ import { AppConfig } from '#/config';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { DynamoInvoiceRepository } from '#/modules/infra/repositories';
-import { InvoiceMapper } from '../modules/app/mappers/invoice';
 import { KAFKA_TOPICS } from './enums';
 import { Kafka } from 'kafkajs';
-import { MapperFactory } from '#/modules/app/mappers/factory';
-import { OrderMapper } from '#/modules/app/mappers/core';
 import { SoapClient } from '#/modules/infra/soap';
 
-export { initTelemetry, shutdownTelemetry } from './telemetry';
 export { initLogger, getLogger } from './logger';
 
 export async function initKakfaConsumers(config: AppConfig) {
@@ -46,52 +34,31 @@ export async function initKakfaConsumers(config: AppConfig) {
   const producer = kafka.producer();
 
   const ddbClient = new DynamoDBClient({ region: config.aws.region });
-  const dddbClient = DynamoDBDocumentClient.from(ddbClient);
+  const docClient = DynamoDBDocumentClient.from(ddbClient);
 
   const validationClient = new SoapClient(config.externalServices.sriVoucherWsdl);
   const authorizationClient = new SoapClient(config.externalServices.sriQueryWsdl);
 
-  // Asegurarse que el MapperFactory se inicialice después de que los decoradores se hayan ejecutado
-  const mapperFactory = MapperFactory.getInstance();
-
-  // Obtener el mapper después de que todo esté registrado
-  const orderMessageMapper = mapperFactory.get<OrderMessageMapper>('orderMessage');
-  const invoiceMessageMapper = mapperFactory.get<InvoiceMessageMapper>('invoiceMessage');
-  const orderMapper = mapperFactory.get<OrderMapper>('order');
-  const validationVoucherMapper = mapperFactory.get<ValidationVoucherMapper>('validationVoucher');
-  const authorizationVoucherMapper =
-    mapperFactory.get<AuthorizationVoucherMapper>('authorizationVoucher');
-  const invoiceMapper = mapperFactory.get<InvoiceMapper>('invoice');
-
   // Adapters
-  const coreAdapter = new CoreAdapter(
-    config.externalServices.core,
-    OrderResponseSchema,
-    orderMapper,
-  );
+  const coreAdapter = new CoreAdapter(config.externalServices.core, OrderResponseSchema);
   const sealifyAdapter = new SealifyAdapter(
     config.externalServices.sealify,
     SealInvoiceResponseSchema,
   );
-  const sriValidationAdapter = new SriValidationAdapter(validationClient, validationVoucherMapper);
-
-  const sriAuthorizationAdapter = new SriAuthorizationAdapter(
-    authorizationClient,
-    authorizationVoucherMapper,
-  );
+  const sriValidationAdapter = new SriValidationAdapter(validationClient);
+  const sriAuthorizationAdapter = new SriAuthorizationAdapter(authorizationClient);
 
   // Repositories
   const invoiceRepository = new DynamoInvoiceRepository(
-    dddbClient,
+    docClient,
     config.aws.dynamoDb.tables.invoices,
-    invoiceMapper,
   );
 
   // Producers
   const invoiceProducer = new KafkaProducer(producer, KAFKA_TOPICS.INVOICES);
 
   // Use cases
-  const processOrderEventMessage = new ProcessOrderMessage(
+  const processOrderMessage = new ProcessOrderMessage(
     coreAdapter,
     invoiceRepository,
     invoiceProducer,
@@ -107,18 +74,14 @@ export async function initKakfaConsumers(config: AppConfig) {
   // Consumers
   const kakfaConsumer = new KafkaConsumer(consumer, [KAFKA_TOPICS.ORDERS, KAFKA_TOPICS.INVOICES], {
     orders: {
-      usecase: processOrderEventMessage,
+      usecase: processOrderMessage,
       validator: OrderMessageSchema,
-      mapper: orderMessageMapper,
     },
     invoices: {
       usecase: processInvoiceMessage,
       validator: InvoiceMessageSchema,
-      mapper: invoiceMessageMapper,
     },
   });
-
-  // Producers
 
   return { kakfaConsumer };
 }

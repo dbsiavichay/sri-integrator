@@ -1,9 +1,5 @@
 import { AuthorizationVoucher, Order, ValidationVoucher } from '#/modules/domain/models';
-import {
-  AuthorizationVoucherResponseDTO,
-  OrderDTO,
-  ReceiptVoucherResponseDTO,
-} from '#/modules/app/dtos';
+import { AuthorizationVoucherResponseDTO, ReceiptVoucherResponseDTO } from '#/modules/app/dtos';
 import { Consumer, Producer } from 'kafkajs';
 import {
   CorePort,
@@ -17,10 +13,12 @@ import { OrderResponse, SealInvoiceResponse } from '../validators';
 import { BaseHttpClient } from '../http';
 import { BaseKafkaConsumer } from '../kafka';
 import { Endpoint } from '#/modules/domain/types';
-import { Mapper } from '#/modules/app/mappers';
 import { ProcessMessageUseCase } from '#/modules/app/usecase';
 import { SoapClient } from '../soap';
 import { ZodSchema } from 'zod';
+import { mapOrderToDomain } from '#/modules/app/mappers/core';
+import { mapValidationVoucherToDomain } from '#/modules/app/mappers/sri';
+import { mapAuthorizationVoucherToDomain } from '#/modules/app/mappers/sri';
 
 export class KafkaConsumer extends BaseKafkaConsumer {
   constructor(
@@ -28,7 +26,7 @@ export class KafkaConsumer extends BaseKafkaConsumer {
     topics: string[],
     private processors: Record<
       string,
-      { usecase: ProcessMessageUseCase<any>; validator: ZodSchema<any>; mapper: Mapper<any, any> }
+      { usecase: ProcessMessageUseCase<any>; validator: ZodSchema<any> }
     >,
   ) {
     super(consumer, topics);
@@ -37,19 +35,18 @@ export class KafkaConsumer extends BaseKafkaConsumer {
   protected async handleMessage(topic: string, message: string): Promise<void> {
     const processor = this.processors[topic];
     if (!processor) {
-      console.warn(`⚠️ No processor defined for topic: ${topic}`);
+      console.warn(`No processor defined for topic: ${topic}`);
       return;
     }
 
-    const parsedMessage = processor.validator.safeParse(JSON.parse(message));
+    const result = processor.validator.safeParse(JSON.parse(message));
 
-    if (parsedMessage.error) {
-      console.error(parsedMessage.error.stack);
-      throw new Error(parsedMessage.error.errors.join(', '));
+    if (!result.success) {
+      console.error(result.error.stack);
+      throw new Error(result.error.errors.join(', '));
     }
 
-    const domainMessage = processor.mapper.toDomain(parsedMessage.data);
-    await processor.usecase.execute(domainMessage);
+    await processor.usecase.execute(result.data);
   }
 }
 
@@ -65,7 +62,7 @@ export class KafkaProducer<T> implements MessageProducer<T> {
       topic: this.topic,
       messages: [{ value: JSON.stringify(message) }],
     });
-    console.log(`📤 Message sent to ${this.topic}: ${JSON.stringify(message)}`);
+    console.log(`Message sent to ${this.topic}: ${JSON.stringify(message)}`);
     await this.producer.disconnect();
   }
 }
@@ -74,7 +71,6 @@ export class CoreAdapter extends BaseHttpClient implements CorePort {
   constructor(
     endpoint: Endpoint,
     private validator: ZodSchema<OrderResponse>,
-    private mapper: Mapper<OrderDTO, Order>,
   ) {
     super({ baseURL: endpoint.host });
   }
@@ -86,8 +82,7 @@ export class CoreAdapter extends BaseHttpClient implements CorePort {
       console.log(`ERRORS: ${parsedResponse.error.stack}`);
       throw new Error(parsedResponse.error.errors.join(', '));
     }
-    const order = this.mapper.mapToDomain(parsedResponse.data as OrderDTO);
-    return order;
+    return mapOrderToDomain(parsedResponse.data);
   }
 }
 
@@ -112,30 +107,25 @@ export class SealifyAdapter extends BaseHttpClient implements SealifyPort {
 }
 
 export class SriValidationAdapter implements SriValidationPort {
-  constructor(
-    private validateClient: SoapClient,
-    private validationMapper: Mapper<ReceiptVoucherResponseDTO, ValidationVoucher>,
-  ) {}
+  constructor(private validateClient: SoapClient) {}
+
   async validateXml(xml: string): Promise<ValidationVoucher> {
     xml = Buffer.from(xml, 'utf-8').toString('base64');
     const response = await this.validateClient.callMethod('validarComprobante', { xml });
-    return this.validationMapper.toDomain(
+    return mapValidationVoucherToDomain(
       response.RespuestaRecepcionComprobante as ReceiptVoucherResponseDTO,
     );
   }
 }
 
 export class SriAuthorizationAdapter implements SriAuthorizationPort {
-  constructor(
-    private authorizationClient: SoapClient,
-    private authorizationMapper: Mapper<AuthorizationVoucherResponseDTO, AuthorizationVoucher>,
-  ) {}
+  constructor(private authorizationClient: SoapClient) {}
 
   async authorizeXml(code: string): Promise<AuthorizationVoucher> {
     const response = await this.authorizationClient.callMethod('autorizacionComprobante', {
       claveAccesoComprobante: code,
     });
-    return this.authorizationMapper.toDomain(
+    return mapAuthorizationVoucherToDomain(
       response.RespuestaAutorizacionComprobante as AuthorizationVoucherResponseDTO,
     );
   }
