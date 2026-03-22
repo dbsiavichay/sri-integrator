@@ -6,6 +6,10 @@ export default {
   logger: {
     level: 'debug',
   },
+  http: {
+    port: 3000,
+    host: '0.0.0.0',
+  },
   externalServices: {
     core: {
       host: 'http://localhost:8000',
@@ -22,10 +26,15 @@ export default {
   },
   aws: {
     region: 'us-east-1',
+    endpoint: 'http://localhost:4566',
     dynamoDb: {
       tables: {
         invoices: 'invoices',
+        certificates: 'certificates',
       },
+    },
+    s3: {
+      bucket: 'sri-integrator-certificates',
     },
   },
   signing: {

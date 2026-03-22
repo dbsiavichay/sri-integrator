@@ -6,6 +6,10 @@ export default {
   logger: {
     level: 'info',
   },
+  http: {
+    port: Number(process.env.HTTP_PORT) || 3000,
+    host: '0.0.0.0',
+  },
   externalServices: {
     core: {
       host: 'http://localhost:8000',
@@ -25,7 +29,11 @@ export default {
     dynamoDb: {
       tables: {
         invoices: 'invoices',
+        certificates: 'certificates',
       },
+    },
+    s3: {
+      bucket: process.env.S3_CERTIFICATES_BUCKET || 'sri-integrator-certificates',
     },
   },
   signing: {

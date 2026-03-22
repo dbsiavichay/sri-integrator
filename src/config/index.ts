@@ -6,6 +6,10 @@ export interface AppConfig {
   logger: {
     level: string;
   };
+  http: {
+    port: number;
+    host: string;
+  };
   externalServices: {
     core: Endpoint;
     sriVoucherWsdl: string;
@@ -21,10 +25,15 @@ export interface AppConfig {
   };
   aws: {
     region: string;
+    endpoint?: string;
     dynamoDb: {
       tables: {
         invoices: string;
+        certificates: string;
       };
+    };
+    s3: {
+      bucket: string;
     };
   };
   timezone: string;

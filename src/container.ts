@@ -1,8 +1,19 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { S3Client } from '@aws-sdk/client-s3';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { KafkaJS } from '@confluentinc/kafka-javascript';
 
 import { AppConfig } from '#/config';
+import {
+  DeleteCertificateCommand,
+  GetCertificateCommand,
+  ListCertificatesCommand,
+  UploadCertificateCommand,
+} from '#/modules/certificate/app/certificate.commands';
+import { P12ParserAdapter } from '#/modules/certificate/infra/adapters/p12-parser.adapter';
+import { S3StorageAdapter } from '#/modules/certificate/infra/adapters/s3-storage.adapter';
+import { registerCertificateRoutes } from '#/modules/certificate/infra/http/certificate.routes';
+import { DynamoCertificateRepository } from '#/modules/certificate/infra/persistence/dynamo-certificate.repository';
 import { AuthorizeInvoiceCommand } from '#/modules/invoice/app/commands/authorize-invoice';
 import { InvoiceCommand } from '#/modules/invoice/app/commands/command';
 import { CreateInvoiceCommand } from '#/modules/invoice/app/commands/create-invoice';
@@ -26,6 +37,7 @@ import { KAFKA_TOPICS } from '#/modules/invoice/infra/messaging/topics';
 import { DynamoInvoiceRepository } from '#/modules/invoice/infra/persistence/dynamo-invoice.repository';
 import { P12Reader } from '#/modules/invoice/infra/signing/p12-reader';
 import { XadesSigner } from '#/modules/invoice/infra/signing/xades-signer';
+import { createHttpServer } from '#/shared/infra/http-server';
 import { SoapClient } from '#/shared/infra/soap-client';
 
 export async function createContainer(config: AppConfig) {
@@ -50,8 +62,18 @@ export async function createContainer(config: AppConfig) {
     'max.in.flight.requests.per.connection': 5,
   });
 
-  const ddbClient = new DynamoDBClient({ region: config.aws.region });
+  const awsClientConfig = {
+    region: config.aws.region,
+    ...(config.aws.endpoint && { endpoint: config.aws.endpoint }),
+  };
+
+  const ddbClient = new DynamoDBClient(awsClientConfig);
   const docClient = DynamoDBDocumentClient.from(ddbClient);
+
+  const s3Client = new S3Client({
+    ...awsClientConfig,
+    ...(config.aws.endpoint && { forcePathStyle: true }),
+  });
 
   const validationClient = new SoapClient(config.externalServices.sriVoucherWsdl);
   const authorizationClient = new SoapClient(config.externalServices.sriQueryWsdl);
@@ -113,7 +135,39 @@ export async function createContainer(config: AppConfig) {
     },
   );
 
+  // Certificate module
+  const certificateRepository = new DynamoCertificateRepository(
+    docClient,
+    config.aws.dynamoDb.tables.certificates,
+  );
+  const p12Parser = new P12ParserAdapter();
+  const s3Storage = new S3StorageAdapter(s3Client, config.aws.s3.bucket, config.aws.endpoint);
+
+  const uploadCertificateCommand = new UploadCertificateCommand(
+    p12Parser,
+    s3Storage,
+    certificateRepository,
+  );
+  const getCertificateCommand = new GetCertificateCommand(certificateRepository);
+  const listCertificatesCommand = new ListCertificatesCommand(certificateRepository);
+  const deleteCertificateCommand = new DeleteCertificateCommand(certificateRepository, s3Storage);
+
+  // HTTP Server
+  const httpServer = await createHttpServer({
+    port: config.http.port,
+    host: config.http.host,
+    serviceName: config.serviceName,
+    serviceVersion: config.serviceVersion,
+  });
+
+  registerCertificateRoutes(httpServer, {
+    upload: uploadCertificateCommand,
+    get: getCertificateCommand,
+    list: listCertificatesCommand,
+    delete: deleteCertificateCommand,
+  });
+
   await invoiceProducer.connect();
 
-  return { consumer: kafkaConsumer, producer: invoiceProducer };
+  return { consumer: kafkaConsumer, producer: invoiceProducer, httpServer };
 }
