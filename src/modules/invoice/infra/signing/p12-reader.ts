@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import * as forge from 'node-forge';
 
 export interface SigningCredentials {
@@ -42,15 +41,14 @@ export class P12Reader {
   private credentials: SigningCredentials | null = null;
 
   constructor(
-    private readonly p12Path: string,
+    private readonly p12Buffer: Buffer,
     private readonly password: string,
   ) {}
 
   getCredentials(): SigningCredentials {
     if (this.credentials) return this.credentials;
 
-    const p12Buffer = fs.readFileSync(this.p12Path);
-    const p12Der = forge.util.decode64(p12Buffer.toString('base64'));
+    const p12Der = forge.util.decode64(this.p12Buffer.toString('base64'));
     const p12Asn1 = forge.asn1.fromDer(p12Der);
     const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, this.password);
 
