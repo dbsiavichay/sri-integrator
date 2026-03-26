@@ -30,6 +30,7 @@ export interface AppConfig {
       tables: {
         invoices: string;
         certificates: string;
+        companyConfig: string;
       };
     };
     s3: {

@@ -14,6 +14,12 @@ import { P12ParserAdapter } from '#/modules/certificate/infra/adapters/p12-parse
 import { S3StorageAdapter } from '#/modules/certificate/infra/adapters/s3-storage.adapter';
 import { registerCertificateRoutes } from '#/modules/certificate/infra/http/certificate.routes';
 import { DynamoCertificateRepository } from '#/modules/certificate/infra/persistence/dynamo-certificate.repository';
+import {
+  GetCompanyConfigQuery,
+  SaveCompanyConfigCommand,
+} from '#/modules/company-config/app/company-config.commands';
+import { registerCompanyConfigRoutes } from '#/modules/company-config/infra/http/company-config.routes';
+import { DynamoCompanyConfigRepository } from '#/modules/company-config/infra/persistence/dynamo-company-config.repository';
 import { AuthorizeInvoiceCommand } from '#/modules/invoice/app/commands/authorize-invoice';
 import { InvoiceCommand } from '#/modules/invoice/app/commands/command';
 import { CreateInvoiceCommand } from '#/modules/invoice/app/commands/create-invoice';
@@ -87,6 +93,10 @@ export async function createContainer(config: AppConfig) {
   const certificateRepository = new DynamoCertificateRepository(
     docClient,
     config.aws.dynamoDb.tables.certificates,
+  );
+  const companyConfigRepository = new DynamoCompanyConfigRepository(
+    docClient,
+    config.aws.dynamoDb.tables.companyConfig,
   );
 
   // Adapters
@@ -171,6 +181,15 @@ export async function createContainer(config: AppConfig) {
     get: getCertificateCommand,
     list: listCertificatesCommand,
     delete: deleteCertificateCommand,
+  });
+
+  // Company config module
+  const saveCompanyConfigCommand = new SaveCompanyConfigCommand(companyConfigRepository);
+  const getCompanyConfigQuery = new GetCompanyConfigQuery(companyConfigRepository);
+
+  registerCompanyConfigRoutes(httpServer, {
+    save: saveCompanyConfigCommand,
+    get: getCompanyConfigQuery,
   });
 
   const getInvoiceQuery = new GetInvoiceQuery(invoiceRepository);
