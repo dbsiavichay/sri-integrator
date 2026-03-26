@@ -61,5 +61,5 @@ export async function createHttpServer(config: HttpServerConfig): Promise<Fastif
     async () => ({ status: 'ok' }),
   );
 
-  return app;
+  return app as unknown as FastifyInstance;
 }

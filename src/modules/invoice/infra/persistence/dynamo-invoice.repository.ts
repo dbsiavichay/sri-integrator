@@ -1,4 +1,4 @@
-import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, PutCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 
 import { Invoice } from '../../domain/invoice';
 import { InvoiceRepository } from '../../domain/repository';
@@ -38,5 +38,10 @@ export class DynamoInvoiceRepository implements InvoiceRepository {
       }),
     );
     return result.Item ? fromInvoiceRecord(result.Item as InvoiceRecord) : null;
+  }
+
+  async findAll(): Promise<Invoice[]> {
+    const result = await this.docClient.send(new ScanCommand({ TableName: this.tableName }));
+    return (result.Items ?? []).map((item) => fromInvoiceRecord(item as InvoiceRecord));
   }
 }

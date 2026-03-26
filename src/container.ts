@@ -21,11 +21,13 @@ import { SendInvoiceCommand } from '#/modules/invoice/app/commands/send-invoice'
 import { SignInvoiceCommand } from '#/modules/invoice/app/commands/sign-invoice';
 import { InvoiceMessageHandler } from '#/modules/invoice/app/handlers/invoice-message.handler';
 import { OrderMessageHandler } from '#/modules/invoice/app/handlers/order-message.handler';
+import { GetInvoiceQuery, ListInvoicesQuery } from '#/modules/invoice/app/queries/invoice.queries';
 import { InvoiceStatus } from '#/modules/invoice/domain/invoice';
 import { CoreAdapter } from '#/modules/invoice/infra/adapters/core.adapter';
 import { SignerAdapter } from '#/modules/invoice/infra/adapters/signer.adapter';
 import { SriAuthorizationAdapter } from '#/modules/invoice/infra/adapters/sri-authorization.adapter';
 import { SriValidationAdapter } from '#/modules/invoice/infra/adapters/sri-validation.adapter';
+import { registerInvoiceRoutes } from '#/modules/invoice/infra/http/invoice.routes';
 import { InvoiceKafkaConsumer } from '#/modules/invoice/infra/messaging/kafka-consumer';
 import { KafkaProducer } from '#/modules/invoice/infra/messaging/kafka-producer';
 import {
@@ -169,6 +171,14 @@ export async function createContainer(config: AppConfig) {
     get: getCertificateCommand,
     list: listCertificatesCommand,
     delete: deleteCertificateCommand,
+  });
+
+  const getInvoiceQuery = new GetInvoiceQuery(invoiceRepository);
+  const listInvoicesQuery = new ListInvoicesQuery(invoiceRepository);
+
+  registerInvoiceRoutes(httpServer, {
+    get: getInvoiceQuery,
+    list: listInvoicesQuery,
   });
 
   await invoiceProducer.connect();
