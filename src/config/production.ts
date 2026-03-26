@@ -30,6 +30,7 @@ export default {
       tables: {
         invoices: 'invoices',
         certificates: 'certificates',
+        companyConfig: 'company_config',
       },
     },
     s3: {
