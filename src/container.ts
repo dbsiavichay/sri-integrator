@@ -35,7 +35,6 @@ import {
 } from '#/modules/invoice/infra/messaging/schemas';
 import { KAFKA_TOPICS } from '#/modules/invoice/infra/messaging/topics';
 import { DynamoInvoiceRepository } from '#/modules/invoice/infra/persistence/dynamo-invoice.repository';
-import { P12Reader } from '#/modules/invoice/infra/signing/p12-reader';
 import { XadesSigner } from '#/modules/invoice/infra/signing/xades-signer';
 import { createHttpServer } from '#/shared/infra/http-server';
 import { SoapClient } from '#/shared/infra/soap-client';
@@ -83,12 +82,22 @@ export async function createContainer(config: AppConfig) {
     docClient,
     config.aws.dynamoDb.tables.invoices,
   );
+  const certificateRepository = new DynamoCertificateRepository(
+    docClient,
+    config.aws.dynamoDb.tables.certificates,
+  );
 
   // Adapters
+  const s3Storage = new S3StorageAdapter(s3Client, config.aws.s3.bucket, config.aws.endpoint);
   const coreAdapter = new CoreAdapter(config.externalServices.core, OrderResponseSchema);
-  const p12Reader = new P12Reader(config.signing.p12Path, config.signing.p12Password);
   const xadesSigner = new XadesSigner(config.timezone);
-  const localSignerAdapter = new LocalSignerAdapter(p12Reader, xadesSigner);
+  const localSignerAdapter = new LocalSignerAdapter(
+    certificateRepository,
+    s3Storage,
+    xadesSigner,
+    config.signing.p12Id,
+    config.signing.p12Password,
+  );
   const sriValidationAdapter = new SriValidationAdapter(validationClient);
   const sriAuthorizationAdapter = new SriAuthorizationAdapter(authorizationClient);
 
@@ -136,12 +145,7 @@ export async function createContainer(config: AppConfig) {
   );
 
   // Certificate module
-  const certificateRepository = new DynamoCertificateRepository(
-    docClient,
-    config.aws.dynamoDb.tables.certificates,
-  );
   const p12Parser = new P12ParserAdapter();
-  const s3Storage = new S3StorageAdapter(s3Client, config.aws.s3.bucket, config.aws.endpoint);
 
   const uploadCertificateCommand = new UploadCertificateCommand(
     p12Parser,

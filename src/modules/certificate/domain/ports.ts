@@ -12,5 +12,6 @@ export interface P12ParserPort {
 
 export interface FileStoragePort {
   upload(key: string, content: Buffer, contentType: string): Promise<string>;
+  download(key: string): Promise<Buffer>;
   delete(key: string): Promise<void>;
 }

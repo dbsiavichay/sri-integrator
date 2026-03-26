@@ -32,7 +32,7 @@ export abstract class BaseKafkaConsumer {
             await this.handleMessage(topic, value);
           } catch (error) {
             logger.error(
-              { topic, partition, offset: message.offset, error },
+              { topic, partition, offset: message.offset, err: error },
               'Failed to process message, skipping',
             );
           }

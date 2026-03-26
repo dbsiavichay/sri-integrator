@@ -16,7 +16,7 @@ export interface AppConfig {
     sriQueryWsdl: string;
   };
   signing: {
-    p12Path: string;
+    p12Id: string;
     p12Password: string;
   };
   kafka: {
