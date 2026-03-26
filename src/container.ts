@@ -23,7 +23,7 @@ import { InvoiceMessageHandler } from '#/modules/invoice/app/handlers/invoice-me
 import { OrderMessageHandler } from '#/modules/invoice/app/handlers/order-message.handler';
 import { InvoiceStatus } from '#/modules/invoice/domain/invoice';
 import { CoreAdapter } from '#/modules/invoice/infra/adapters/core.adapter';
-import { LocalSignerAdapter } from '#/modules/invoice/infra/adapters/local-signer.adapter';
+import { SignerAdapter } from '#/modules/invoice/infra/adapters/signer.adapter';
 import { SriAuthorizationAdapter } from '#/modules/invoice/infra/adapters/sri-authorization.adapter';
 import { SriValidationAdapter } from '#/modules/invoice/infra/adapters/sri-validation.adapter';
 import { InvoiceKafkaConsumer } from '#/modules/invoice/infra/messaging/kafka-consumer';
@@ -91,7 +91,7 @@ export async function createContainer(config: AppConfig) {
   const s3Storage = new S3StorageAdapter(s3Client, config.aws.s3.bucket, config.aws.endpoint);
   const coreAdapter = new CoreAdapter(config.externalServices.core, OrderResponseSchema);
   const xadesSigner = new XadesSigner(config.timezone);
-  const localSignerAdapter = new LocalSignerAdapter(
+  const signerAdapter = new SignerAdapter(
     certificateRepository,
     s3Storage,
     xadesSigner,
@@ -106,7 +106,7 @@ export async function createContainer(config: AppConfig) {
 
   // Commands
   const createInvoiceCommand = new CreateInvoiceCommand(coreAdapter, invoiceRepository);
-  const signInvoiceCommand = new SignInvoiceCommand(localSignerAdapter, invoiceRepository);
+  const signInvoiceCommand = new SignInvoiceCommand(signerAdapter, invoiceRepository);
   const sendInvoiceCommand = new SendInvoiceCommand(sriValidationAdapter, invoiceRepository);
   const authorizeInvoiceCommand = new AuthorizeInvoiceCommand(
     sriAuthorizationAdapter,
