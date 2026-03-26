@@ -5,7 +5,7 @@ import { InvoiceSignerPort } from '../../domain/ports';
 import { P12Reader, SigningCredentials } from '../signing/p12-reader';
 import { XadesSigner } from '../signing/xades-signer';
 
-export class LocalSignerAdapter implements InvoiceSignerPort {
+export class SignerAdapter implements InvoiceSignerPort {
   private credentials: SigningCredentials | null = null;
 
   constructor(
