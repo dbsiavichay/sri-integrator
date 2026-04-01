@@ -27,6 +27,7 @@ import { SendInvoiceCommand } from '#/modules/invoice/app/commands/send-invoice'
 import { SignInvoiceCommand } from '#/modules/invoice/app/commands/sign-invoice';
 import { InvoiceMessageHandler } from '#/modules/invoice/app/handlers/invoice-message.handler';
 import { OrderMessageHandler } from '#/modules/invoice/app/handlers/order-message.handler';
+import { SaleConfirmedMessageHandler } from '#/modules/invoice/app/handlers/sale-confirmed-message.handler';
 import { GetInvoiceQuery, ListInvoicesQuery } from '#/modules/invoice/app/queries/invoice.queries';
 import { InvoiceStatus } from '#/modules/invoice/domain/invoice';
 import { CoreAdapter } from '#/modules/invoice/infra/adapters/core.adapter';
@@ -40,6 +41,7 @@ import {
   InvoiceMessageSchema,
   OrderMessageSchema,
   OrderResponseSchema,
+  SaleConfirmedMessageSchema,
 } from '#/modules/invoice/infra/messaging/schemas';
 import { KAFKA_TOPICS } from '#/modules/invoice/infra/messaging/topics';
 import { DynamoInvoiceRepository } from '#/modules/invoice/infra/persistence/dynamo-invoice.repository';
@@ -139,11 +141,12 @@ export async function createContainer(config: AppConfig) {
     commandMap,
     invoiceProducer,
   );
+  const saleConfirmedHandler = new SaleConfirmedMessageHandler();
 
   // Consumer
   const kafkaConsumer = new InvoiceKafkaConsumer(
     consumer,
-    [KAFKA_TOPICS.ORDERS, KAFKA_TOPICS.INVOICES],
+    [KAFKA_TOPICS.ORDERS, KAFKA_TOPICS.INVOICES, KAFKA_TOPICS.SALES_CONFIRMED],
     {
       [KAFKA_TOPICS.ORDERS]: {
         handler: orderMessageHandler,
@@ -152,6 +155,10 @@ export async function createContainer(config: AppConfig) {
       [KAFKA_TOPICS.INVOICES]: {
         handler: invoiceMessageHandler,
         validator: InvoiceMessageSchema,
+      },
+      [KAFKA_TOPICS.SALES_CONFIRMED]: {
+        handler: saleConfirmedHandler,
+        validator: SaleConfirmedMessageSchema,
       },
     },
   );

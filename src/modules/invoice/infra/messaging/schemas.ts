@@ -112,3 +112,7 @@ export const InvoiceMessageSchema = z.object({
 });
 
 export type InvoiceMessage = z.infer<typeof InvoiceMessageSchema>;
+
+export const SaleConfirmedMessageSchema = z.record(z.unknown());
+
+export type SaleConfirmedMessage = z.infer<typeof SaleConfirmedMessageSchema>;
