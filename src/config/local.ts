@@ -7,7 +7,7 @@ export default {
     level: 'debug',
   },
   http: {
-    port: 3000,
+    port: 3173,
     host: '0.0.0.0',
   },
   externalServices: {
