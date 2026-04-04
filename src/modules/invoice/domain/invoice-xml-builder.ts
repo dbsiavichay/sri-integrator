@@ -1,60 +1,114 @@
-import { DateTime } from 'luxon';
 import { create } from 'xmlbuilder2';
 
-import { Order } from './order';
+export interface InvoiceXmlInput {
+  environment: number;
+  emissionType: number;
+  companyName: string;
+  companyTradeName: string;
+  companyCode: string;
+  companyMainAddress: string;
+  companyBranchAddress: string;
+  companyBranchCode: string;
+  companySalePointCode: string;
+  companyAccountingRequired: boolean;
+  accessCode: string;
+  sequence: string;
+  voucherTypeCode: string;
+  date: Date;
+  customer: {
+    taxIdCode: string;
+    name: string;
+    taxId: string;
+    email: string;
+    phone?: string | null;
+    address?: string | null;
+  };
+  subtotal: number;
+  totalDiscount: number;
+  total: number;
+  payments: Array<{ formaPago: string; amount: number }>;
+  items: Array<{
+    productId: string;
+    sku: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    discount: number;
+    subtotal: number;
+    taxCodigoPorcentaje: number;
+    taxRate: number;
+    taxAmount: number;
+  }>;
+}
 
-export function buildInvoiceXml(order: Order): string {
-  const data = getInvoiceData(order);
+export function buildInvoiceXml(input: InvoiceXmlInput): string {
+  const data = getInvoiceData(input);
   return create(data).end({ prettyPrint: true });
 }
 
-function getInvoiceData(order: Order) {
-  const adjustedVoucherDate = DateTime.fromJSDate(order.date);
-  const customer = order.customer;
-  const payments = order.payments;
-  const lines = order.lines;
+function formatDate(d: Date): string {
+  return (
+    String(d.getDate()).padStart(2, '0') +
+    '/' +
+    String(d.getMonth() + 1).padStart(2, '0') +
+    '/' +
+    String(d.getFullYear())
+  );
+}
+
+function getInvoiceData(input: InvoiceXmlInput) {
+  const taxGroups = new Map<number, { baseImponible: number; valor: number }>();
+  for (const item of input.items) {
+    const existing = taxGroups.get(item.taxCodigoPorcentaje) ?? { baseImponible: 0, valor: 0 };
+    taxGroups.set(item.taxCodigoPorcentaje, {
+      baseImponible: existing.baseImponible + item.subtotal,
+      valor: existing.valor + item.taxAmount,
+    });
+  }
+
+  const totalImpuesto = Array.from(taxGroups.entries()).map(([codigoPorcentaje, group]) => ({
+    codigo: 2,
+    codigoPorcentaje,
+    baseImponible: group.baseImponible,
+    valor: group.valor,
+  }));
+
+  const campoAdicional = buildCampoAdicional(input.customer);
 
   const data = {
     factura: {
       '@id': 'comprobante',
-      '@version': '1.0.0',
+      '@version': '1.1.0',
       infoTributaria: {
-        ambiente: order.sriConfig.environment,
-        tipoEmision: order.sriConfig.emissionType,
-        razonSocial: order.sriConfig.companyName,
-        nombreComercial: order.sriConfig.companyTradeName,
-        ruc: order.sriConfig.companyCode,
-        claveAcceso: order.accessCode,
-        codDoc: order.voucherTypeCode,
-        estab: order.companyBranchCode,
-        ptoEmi: order.companySalePointCode,
-        secuencial: order.sequence,
-        dirMatriz: order.sriConfig.companyMainAddress,
+        ambiente: input.environment,
+        tipoEmision: input.emissionType,
+        razonSocial: input.companyName,
+        nombreComercial: input.companyTradeName,
+        ruc: input.companyCode,
+        claveAcceso: input.accessCode,
+        codDoc: input.voucherTypeCode,
+        estab: input.companyBranchCode,
+        ptoEmi: input.companySalePointCode,
+        secuencial: input.sequence,
+        dirMatriz: input.companyMainAddress,
       },
       infoFactura: {
-        fechaEmision: adjustedVoucherDate.toFormat('dd/MM/yyyy'),
-        dirEstablecimiento: order.sriConfig.companyBranchAddress,
-        obligadoContabilidad: order.sriConfig.companyAccountingRequired ? 'SI' : 'NO',
-        tipoIdentificacionComprador: order.customer.codeType,
-        razonSocialComprador: order.customer.bussinessName,
-        identificacionComprador: order.customer.code,
-        totalSinImpuestos: order.subtotal,
-        totalDescuento: 0,
+        fechaEmision: formatDate(input.date),
+        dirEstablecimiento: input.companyBranchAddress,
+        obligadoContabilidad: input.companyAccountingRequired ? 'SI' : 'NO',
+        tipoIdentificacionComprador: input.customer.taxIdCode,
+        razonSocialComprador: input.customer.name,
+        identificacionComprador: input.customer.taxId,
+        totalSinImpuestos: input.subtotal,
+        totalDescuento: input.totalDiscount,
         totalConImpuestos: {
-          totalImpuesto: [
-            {
-              codigo: 2,
-              codigoPorcentaje: 4,
-              baseImponible: order.subtotal,
-              valor: order.tax,
-            },
-          ],
+          totalImpuesto,
         },
         propina: 0,
-        importeTotal: order.total,
+        importeTotal: input.total,
         moneda: 'DOLAR',
         pagos: {
-          pago: [] as { formaPago: string; total: number; plazo: number; unidadTiempo: string }[],
+          pago: [] as { formaPago: string; total: number }[],
         },
       },
       detalles: {
@@ -77,57 +131,36 @@ function getInvoiceData(order: Order) {
           };
         }[],
       },
-      infoAdicional: {
-        campoAdicional: [] as { '@nombre': string; '#text': string }[],
-      },
+      ...(campoAdicional.length > 0 && {
+        infoAdicional: { campoAdicional },
+      }),
     },
   };
 
-  if (customer.address) {
-    data.factura.infoAdicional.campoAdicional.push({
-      '@nombre': 'Dirección',
-      '#text': customer.address,
-    });
-  }
-
-  if (customer.phone) {
-    data.factura.infoAdicional.campoAdicional.push({
-      '@nombre': 'Telefono',
-      '#text': customer.phone,
-    });
-  }
-
-  data.factura.infoAdicional.campoAdicional.push({
-    '@nombre': 'Email',
-    '#text': customer.email,
-  });
-
-  payments.forEach((payment) => {
+  input.payments.forEach((payment) => {
     data.factura.infoFactura.pagos.pago.push({
-      formaPago: payment.type,
+      formaPago: payment.formaPago,
       total: payment.amount,
-      plazo: 0,
-      unidadTiempo: 'dias',
     });
   });
 
-  lines.forEach((line) => {
+  input.items.forEach((item) => {
     data.factura.detalles.detalle.push({
-      codigoPrincipal: line.product.code,
-      codigoAuxiliar: line.product.sku,
-      descripcion: line.product.name,
-      cantidad: line.quantity,
-      precioUnitario: line.unitPrice,
-      descuento: 0,
-      precioTotalSinImpuesto: line.subtotal,
+      codigoPrincipal: item.productId,
+      codigoAuxiliar: item.sku,
+      descripcion: item.description,
+      cantidad: item.quantity,
+      precioUnitario: item.unitPrice,
+      descuento: item.discount,
+      precioTotalSinImpuesto: item.subtotal,
       impuestos: {
         impuesto: [
           {
             codigo: 2,
-            codigoPorcentaje: 4,
-            tarifa: 15,
-            baseImponible: line.subtotal,
-            valor: line.tax,
+            codigoPorcentaje: item.taxCodigoPorcentaje,
+            tarifa: item.taxRate,
+            baseImponible: item.subtotal,
+            valor: item.taxAmount,
           },
         ],
       },
@@ -135,4 +168,22 @@ function getInvoiceData(order: Order) {
   });
 
   return data;
+}
+
+function buildCampoAdicional(
+  customer: InvoiceXmlInput['customer'],
+): { '@nombre': string; '#text': string }[] {
+  const campos: { '@nombre': string; '#text': string }[] = [];
+
+  if (customer.address) {
+    campos.push({ '@nombre': 'Dirección', '#text': customer.address });
+  }
+  if (customer.phone) {
+    campos.push({ '@nombre': 'Telefono', '#text': customer.phone });
+  }
+  if (customer.email) {
+    campos.push({ '@nombre': 'Email', '#text': customer.email });
+  }
+
+  return campos;
 }

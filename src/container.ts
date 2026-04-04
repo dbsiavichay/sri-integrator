@@ -23,6 +23,7 @@ import { DynamoCompanyConfigRepository } from '#/modules/company-config/infra/pe
 import { AuthorizeInvoiceCommand } from '#/modules/invoice/app/commands/authorize-invoice';
 import { InvoiceCommand } from '#/modules/invoice/app/commands/command';
 import { CreateInvoiceCommand } from '#/modules/invoice/app/commands/create-invoice';
+import { CreateInvoiceFromSaleCommand } from '#/modules/invoice/app/commands/create-invoice-from-sale';
 import { SendInvoiceCommand } from '#/modules/invoice/app/commands/send-invoice';
 import { SignInvoiceCommand } from '#/modules/invoice/app/commands/sign-invoice';
 import { InvoiceMessageHandler } from '#/modules/invoice/app/handlers/invoice-message.handler';
@@ -134,6 +135,12 @@ export async function createContainer(config: AppConfig) {
     [InvoiceStatus.SENT, authorizeInvoiceCommand],
   ]);
 
+  const createInvoiceFromSaleCommand = new CreateInvoiceFromSaleCommand(
+    companyConfigRepository,
+    invoiceRepository,
+    config.signing.p12Id,
+  );
+
   // Handlers
   const orderMessageHandler = new OrderMessageHandler(createInvoiceCommand, invoiceProducer);
   const invoiceMessageHandler = new InvoiceMessageHandler(
@@ -141,7 +148,10 @@ export async function createContainer(config: AppConfig) {
     commandMap,
     invoiceProducer,
   );
-  const saleConfirmedHandler = new SaleConfirmedMessageHandler();
+  const saleConfirmedHandler = new SaleConfirmedMessageHandler(
+    createInvoiceFromSaleCommand,
+    invoiceProducer,
+  );
 
   // Consumer
   const kafkaConsumer = new InvoiceKafkaConsumer(
