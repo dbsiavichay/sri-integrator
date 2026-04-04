@@ -24,6 +24,7 @@ export class CompanyConfig {
     public readonly accountingRequired: boolean,
     public readonly environment: Environment,
     public readonly emissionType: EmissionType,
+    public readonly invoiceSequence: number,
     public readonly updatedAt: Date,
   ) {}
 
@@ -40,6 +41,7 @@ export class CompanyConfig {
     accountingRequired?: boolean;
     environment: Environment;
     emissionType: EmissionType;
+    invoiceSequence?: number;
   }): CompanyConfig {
     return new CompanyConfig(
       CompanyConfig.SINGLETON_ID,
@@ -55,6 +57,7 @@ export class CompanyConfig {
       props.accountingRequired ?? false,
       props.environment,
       props.emissionType,
+      props.invoiceSequence ?? 1,
       new Date(),
     );
   }

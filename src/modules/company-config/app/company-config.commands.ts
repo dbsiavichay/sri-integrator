@@ -14,13 +14,19 @@ export interface SaveCompanyConfigInput {
   accountingRequired?: boolean;
   environment: Environment;
   emissionType: EmissionType;
+  invoiceSequence?: number;
 }
 
 export class SaveCompanyConfigCommand {
   constructor(private readonly repository: CompanyConfigRepository) {}
 
   async execute(input: SaveCompanyConfigInput): Promise<CompanyConfig> {
-    const config = CompanyConfig.create(input);
+    let invoiceSequence = input.invoiceSequence;
+    if (invoiceSequence === undefined) {
+      const current = await this.repository.find();
+      invoiceSequence = current?.invoiceSequence ?? 1;
+    }
+    const config = CompanyConfig.create({ ...input, invoiceSequence });
     return this.repository.save(config);
   }
 }

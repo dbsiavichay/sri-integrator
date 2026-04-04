@@ -14,6 +14,7 @@ export function toResponse(config: CompanyConfig) {
     accountingRequired: config.accountingRequired,
     environment: config.environment,
     emissionType: config.emissionType,
+    invoiceSequence: config.invoiceSequence,
     updatedAt: config.updatedAt.toISOString(),
   };
 }

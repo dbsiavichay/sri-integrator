@@ -11,6 +11,7 @@ const companyConfigResponseProperties = {
   accountingRequired: { type: 'boolean' },
   environment: { type: 'number' },
   emissionType: { type: 'number' },
+  invoiceSequence: { type: 'number' },
   updatedAt: { type: 'string', format: 'date-time' },
 } as const;
 
@@ -48,6 +49,7 @@ export const saveCompanyConfigSchema = {
       accountingRequired: { type: 'boolean' },
       environment: { type: 'number', enum: [1, 2] },
       emissionType: { type: 'number', enum: [1] },
+      invoiceSequence: { type: 'number', minimum: 1 },
     },
   },
   response: {

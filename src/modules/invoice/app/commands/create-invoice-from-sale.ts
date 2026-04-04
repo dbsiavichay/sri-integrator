@@ -8,7 +8,6 @@ import { InvoiceRepository } from '../../domain/repository';
 import { PAYMENT_METHOD_CODES, TAX_RATE_CODES, TAX_TYPE_CODES } from '../../domain/sri-catalogs';
 import { SaleConfirmedMessage } from '../../infra/messaging/schemas';
 
-const DEFAULT_SEQUENCE = '000000601';
 const VOUCHER_TYPE_CODE = '01';
 
 export class CreateInvoiceFromSaleCommand {
@@ -25,12 +24,10 @@ export class CreateInvoiceFromSaleCommand {
     const date = new Date(message.occurred_at);
     const { payload } = message;
 
-    const accessCodeStr = generateAccessCode(
-      date,
-      companyConfig,
-      payload.sale_id,
-      DEFAULT_SEQUENCE,
-    );
+    const sequenceNum = await this.companyConfigRepository.nextInvoiceSequence();
+    const sequence = String(sequenceNum).padStart(9, '0');
+
+    const accessCodeStr = generateAccessCode(date, companyConfig, payload.sale_id, sequence);
 
     const customer = payload.customer
       ? {
@@ -60,7 +57,7 @@ export class CreateInvoiceFromSaleCommand {
       companySalePointCode: companyConfig.salePointCode,
       companyAccountingRequired: companyConfig.accountingRequired,
       accessCode: accessCodeStr,
-      sequence: DEFAULT_SEQUENCE,
+      sequence,
       voucherTypeCode: VOUCHER_TYPE_CODE,
       date,
       customer,
