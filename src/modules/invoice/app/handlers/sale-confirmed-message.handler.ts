@@ -1,9 +1,18 @@
-import { logger } from '#/shared/logger';
-
+import { InvoiceDomainEvent } from '../../domain/events';
+import { MessageProducer } from '../../domain/ports';
 import { SaleConfirmedMessage } from '../../infra/messaging/schemas';
+import { CreateInvoiceFromSaleCommand } from '../commands/create-invoice-from-sale';
 
 export class SaleConfirmedMessageHandler {
+  constructor(
+    private createInvoiceFromSaleCommand: CreateInvoiceFromSaleCommand,
+    private messageProducer: MessageProducer<InvoiceDomainEvent>,
+  ) {}
+
   async handle(message: SaleConfirmedMessage): Promise<void> {
-    logger.info({ event: message }, 'Sale confirmed event received');
+    const invoice = await this.createInvoiceFromSaleCommand.execute(message);
+    for (const event of invoice.pullEvents()) {
+      await this.messageProducer.sendMessage(event);
+    }
   }
 }
