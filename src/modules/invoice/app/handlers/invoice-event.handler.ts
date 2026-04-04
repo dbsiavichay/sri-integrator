@@ -7,7 +7,7 @@ import { InvoiceRepository } from '../../domain/repository';
 import { InvoiceCommand } from '../commands/command';
 import { InvoiceMessageInput } from '../types';
 
-export class InvoiceMessageHandler {
+export class InvoiceEventHandler {
   constructor(
     private invoiceRepository: InvoiceRepository,
     private commandMap: Map<InvoiceStatus, InvoiceCommand>,

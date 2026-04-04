@@ -11,10 +11,6 @@ export default {
     host: '0.0.0.0',
   },
   externalServices: {
-    core: {
-      host: 'http://localhost:8000',
-      timeout: 1000,
-    },
     sriVoucherWsdl:
       'https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl',
     sriQueryWsdl:

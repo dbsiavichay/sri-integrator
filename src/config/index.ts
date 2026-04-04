@@ -1,5 +1,3 @@
-import { Endpoint } from '#/shared/types';
-
 export interface AppConfig {
   serviceName: string;
   serviceVersion: string;
@@ -11,7 +9,6 @@ export interface AppConfig {
     host: string;
   };
   externalServices: {
-    core: Endpoint;
     sriVoucherWsdl: string;
     sriQueryWsdl: string;
   };
