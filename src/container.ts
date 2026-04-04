@@ -23,15 +23,12 @@ import { DynamoCompanyConfigRepository } from '#/modules/company-config/infra/pe
 import { AuthorizeInvoiceCommand } from '#/modules/invoice/app/commands/authorize-invoice';
 import { InvoiceCommand } from '#/modules/invoice/app/commands/command';
 import { CreateInvoiceCommand } from '#/modules/invoice/app/commands/create-invoice';
-import { CreateInvoiceFromSaleCommand } from '#/modules/invoice/app/commands/create-invoice-from-sale';
 import { SendInvoiceCommand } from '#/modules/invoice/app/commands/send-invoice';
 import { SignInvoiceCommand } from '#/modules/invoice/app/commands/sign-invoice';
-import { InvoiceMessageHandler } from '#/modules/invoice/app/handlers/invoice-message.handler';
-import { OrderMessageHandler } from '#/modules/invoice/app/handlers/order-message.handler';
-import { SaleConfirmedMessageHandler } from '#/modules/invoice/app/handlers/sale-confirmed-message.handler';
+import { InvoiceEventHandler } from '#/modules/invoice/app/handlers/invoice-event.handler';
+import { SaleConfirmedHandler } from '#/modules/invoice/app/handlers/sale-confirmed.handler';
 import { GetInvoiceQuery, ListInvoicesQuery } from '#/modules/invoice/app/queries/invoice.queries';
 import { InvoiceStatus } from '#/modules/invoice/domain/invoice';
-import { CoreAdapter } from '#/modules/invoice/infra/adapters/core.adapter';
 import { SignerAdapter } from '#/modules/invoice/infra/adapters/signer.adapter';
 import { SriAuthorizationAdapter } from '#/modules/invoice/infra/adapters/sri-authorization.adapter';
 import { SriValidationAdapter } from '#/modules/invoice/infra/adapters/sri-validation.adapter';
@@ -40,8 +37,6 @@ import { InvoiceKafkaConsumer } from '#/modules/invoice/infra/messaging/kafka-co
 import { KafkaProducer } from '#/modules/invoice/infra/messaging/kafka-producer';
 import {
   InvoiceMessageSchema,
-  OrderMessageSchema,
-  OrderResponseSchema,
   SaleConfirmedMessageSchema,
 } from '#/modules/invoice/infra/messaging/schemas';
 import { KAFKA_TOPICS } from '#/modules/invoice/infra/messaging/topics';
@@ -104,7 +99,6 @@ export async function createContainer(config: AppConfig) {
 
   // Adapters
   const s3Storage = new S3StorageAdapter(s3Client, config.aws.s3.bucket, config.aws.endpoint);
-  const coreAdapter = new CoreAdapter(config.externalServices.core, OrderResponseSchema);
   const xadesSigner = new XadesSigner(config.timezone);
   const signerAdapter = new SignerAdapter(
     certificateRepository,
@@ -120,7 +114,6 @@ export async function createContainer(config: AppConfig) {
   const invoiceProducer = new KafkaProducer(producer, KAFKA_TOPICS.INVOICES);
 
   // Commands
-  const createInvoiceCommand = new CreateInvoiceCommand(coreAdapter, invoiceRepository);
   const signInvoiceCommand = new SignInvoiceCommand(signerAdapter, invoiceRepository);
   const sendInvoiceCommand = new SendInvoiceCommand(sriValidationAdapter, invoiceRepository);
   const authorizeInvoiceCommand = new AuthorizeInvoiceCommand(
@@ -135,35 +128,27 @@ export async function createContainer(config: AppConfig) {
     [InvoiceStatus.SENT, authorizeInvoiceCommand],
   ]);
 
-  const createInvoiceFromSaleCommand = new CreateInvoiceFromSaleCommand(
+  const createInvoiceCommand = new CreateInvoiceCommand(
     companyConfigRepository,
     invoiceRepository,
     config.signing.p12Id,
   );
 
   // Handlers
-  const orderMessageHandler = new OrderMessageHandler(createInvoiceCommand, invoiceProducer);
-  const invoiceMessageHandler = new InvoiceMessageHandler(
+  const invoiceEventHandler = new InvoiceEventHandler(
     invoiceRepository,
     commandMap,
     invoiceProducer,
   );
-  const saleConfirmedHandler = new SaleConfirmedMessageHandler(
-    createInvoiceFromSaleCommand,
-    invoiceProducer,
-  );
+  const saleConfirmedHandler = new SaleConfirmedHandler(createInvoiceCommand, invoiceProducer);
 
   // Consumer
   const kafkaConsumer = new InvoiceKafkaConsumer(
     consumer,
-    [KAFKA_TOPICS.ORDERS, KAFKA_TOPICS.INVOICES, KAFKA_TOPICS.SALES_CONFIRMED],
+    [KAFKA_TOPICS.INVOICES, KAFKA_TOPICS.SALES_CONFIRMED],
     {
-      [KAFKA_TOPICS.ORDERS]: {
-        handler: orderMessageHandler,
-        validator: OrderMessageSchema,
-      },
       [KAFKA_TOPICS.INVOICES]: {
-        handler: invoiceMessageHandler,
+        handler: invoiceEventHandler,
         validator: InvoiceMessageSchema,
       },
       [KAFKA_TOPICS.SALES_CONFIRMED]: {

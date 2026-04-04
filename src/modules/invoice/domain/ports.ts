@@ -1,9 +1,4 @@
-import { Order } from './order';
 import { AuthorizationVoucher, ValidationVoucher } from './voucher';
-
-export interface CorePort {
-  retrieveOrder(orderId: number): Promise<Order>;
-}
 
 export interface InvoiceSignerPort {
   signInvoice(xml: string): Promise<string>;

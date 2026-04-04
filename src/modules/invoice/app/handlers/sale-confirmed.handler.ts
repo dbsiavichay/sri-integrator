@@ -1,16 +1,16 @@
 import { InvoiceDomainEvent } from '../../domain/events';
 import { MessageProducer } from '../../domain/ports';
 import { SaleConfirmedMessage } from '../../infra/messaging/schemas';
-import { CreateInvoiceFromSaleCommand } from '../commands/create-invoice-from-sale';
+import { CreateInvoiceCommand } from '../commands/create-invoice';
 
-export class SaleConfirmedMessageHandler {
+export class SaleConfirmedHandler {
   constructor(
-    private createInvoiceFromSaleCommand: CreateInvoiceFromSaleCommand,
+    private createInvoiceCommand: CreateInvoiceCommand,
     private messageProducer: MessageProducer<InvoiceDomainEvent>,
   ) {}
 
   async handle(message: SaleConfirmedMessage): Promise<void> {
-    const invoice = await this.createInvoiceFromSaleCommand.execute(message);
+    const invoice = await this.createInvoiceCommand.execute(message);
     for (const event of invoice.pullEvents()) {
       await this.messageProducer.sendMessage(event);
     }
