@@ -50,7 +50,7 @@ export async function createContainer(config: AppConfig) {
   const kafka = new KafkaJS.Kafka({
     kafkaJS: {
       brokers: config.kafka.brokers,
-      clientId: 'sri-integrator',
+      clientId: 'faclab-invoicing',
       logLevel: KafkaJS.logLevel.INFO,
     },
   });

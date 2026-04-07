@@ -1,7 +1,7 @@
 import { AppConfig } from './index';
 
 export default {
-  serviceName: 'sri-integrator',
+  serviceName: 'faclab-invoicing',
   serviceVersion: '1.0.0',
   logger: {
     level: 'info',
@@ -18,7 +18,7 @@ export default {
   },
   kafka: {
     brokers: ['localhost:29092'],
-    groupId: 'sri-integrator',
+    groupId: 'faclab-invoicing',
   },
   aws: {
     region: 'us-east-1',
@@ -30,7 +30,7 @@ export default {
       },
     },
     s3: {
-      bucket: process.env.S3_CERTIFICATES_BUCKET || 'sri-integrator-certificates',
+      bucket: process.env.S3_CERTIFICATES_BUCKET || 'faclab-invoicing-certificates',
     },
   },
   signing: {
