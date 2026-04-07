@@ -2,7 +2,8 @@ const certificateResponseProperties = {
   id: {
     type: 'string',
     format: 'uuid',
-    description: 'Unique certificate identifier. Use this value as SIGNING_P12_ID.',
+    description:
+      'Unique certificate identifier. Set this value as the `signingCertId` in the company configuration (PUT /api/company-config).',
   },
   serialNumber: {
     type: 'string',
@@ -55,7 +56,7 @@ export const uploadCertificateSchema = {
   tags: ['Certificates'],
   summary: 'Upload a .p12 digital signature certificate',
   description:
-    'Accepts a PKCS#12 (.p12) file and its password. The service parses the certificate metadata, stores the file in S3, and persists the metadata in DynamoDB. The returned `id` should be set as the `SIGNING_P12_ID` environment variable so the service uses this certificate to sign invoices.',
+    'Accepts a PKCS#12 (.p12) file and its password. The service parses the certificate metadata, stores the file in S3, and persists the metadata in DynamoDB. The returned `id` should be saved as the `signingCertId` field in the company configuration (PUT /api/company-config) so the service uses this certificate to sign invoices.',
   multipartBody: {
     type: 'object',
     required: ['file', 'password'],
@@ -126,7 +127,7 @@ export const deleteCertificateSchema = {
   tags: ['Certificates'],
   summary: 'Delete a certificate',
   description:
-    'Deletes the certificate from both DynamoDB and S3. If the certificate is currently configured as SIGNING_P12_ID, invoice signing will fail until a new certificate is configured.',
+    'Deletes the certificate from both DynamoDB and S3. If this certificate is currently set as the `signingCertId` in company configuration, invoice signing will fail until a new certificate is configured.',
   params: {
     type: 'object',
     properties: { id: { type: 'string', format: 'uuid', description: 'Certificate UUID.' } },

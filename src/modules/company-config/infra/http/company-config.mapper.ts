@@ -15,6 +15,7 @@ export function toResponse(config: CompanyConfig) {
     environment: config.environment,
     emissionType: config.emissionType,
     invoiceSequence: config.invoiceSequence,
+    signingCertId: config.signingCertId,
     updatedAt: config.updatedAt.toISOString(),
   };
 }

@@ -14,12 +14,13 @@ export class CreateInvoiceCommand {
   constructor(
     private companyConfigRepository: CompanyConfigRepository,
     private invoiceRepository: InvoiceRepository,
-    private signingCertId: string,
   ) {}
 
   async execute(message: SaleConfirmedMessage): Promise<Invoice> {
     const companyConfig = await this.companyConfigRepository.find();
     if (!companyConfig) throw new Error('Company config not found');
+    if (!companyConfig.signingCertId)
+      throw new Error('No signing certificate configured in company config');
 
     const date = new Date(message.occurred_at);
     const { payload } = message;
@@ -88,7 +89,7 @@ export class CreateInvoiceCommand {
     const invoice = Invoice.create(
       String(payload.sale_id),
       AccessCode.create(accessCodeStr),
-      this.signingCertId,
+      companyConfig.signingCertId,
       xml,
     );
     await this.invoiceRepository.createInvoice(invoice);

@@ -15,6 +15,7 @@ export interface CompanyConfigRecord {
   environment: number;
   emission_type: number;
   invoice_sequence: number;
+  signing_cert_id: string | null;
   updated_at: string;
 }
 
@@ -34,6 +35,7 @@ export function toCompanyConfigRecord(config: CompanyConfig): CompanyConfigRecor
     environment: config.environment,
     emission_type: config.emissionType,
     invoice_sequence: config.invoiceSequence,
+    signing_cert_id: config.signingCertId,
     updated_at: config.updatedAt.toISOString(),
   };
 }
@@ -54,6 +56,7 @@ export function fromCompanyConfigRecord(record: CompanyConfigRecord): CompanyCon
     record.environment as Environment,
     record.emission_type as EmissionType,
     record.invoice_sequence ?? 1,
+    record.signing_cert_id ?? null,
     new Date(record.updated_at),
   );
 }

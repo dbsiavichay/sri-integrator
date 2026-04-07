@@ -35,7 +35,6 @@ export default {
     },
   },
   signing: {
-    p12Id: process.env.SIGNING_P12_ID || '',
     p12Password: process.env.SIGNING_P12_PASSWORD || '',
   },
   timezone: 'America/Guayaquil',

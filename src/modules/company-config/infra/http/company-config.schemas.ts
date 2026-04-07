@@ -60,6 +60,12 @@ const companyConfigResponseProperties = {
       'Current sequential invoice counter. Auto-incremented on each invoice creation. Can be seeded on first setup.',
     example: 42,
   },
+  signingCertId: {
+    type: ['string', 'null'],
+    format: 'uuid',
+    description:
+      'UUID of the PKCS#12 certificate used to sign invoices. Set this to the `id` returned by the certificate upload endpoint. Null if no certificate has been configured.',
+  },
   updatedAt: {
     type: 'string',
     format: 'date-time',
@@ -96,19 +102,16 @@ export const saveCompanyConfigSchema = {
         minLength: 13,
         maxLength: 13,
         description: 'Company RUC — exactly 13 digits.',
-        example: '1792141001001',
       },
       name: {
         type: 'string',
         maxLength: 64,
         description: 'Legal company name (max 64 chars).',
-        example: 'ACME SOLUTIONS S.A.',
       },
       tradeName: {
         type: 'string',
         maxLength: 64,
         description: 'Trade name (max 64 chars).',
-        example: 'ACME',
       },
       mainAddress: { type: 'string', description: 'Main establishment address.' },
       branchAddress: { type: 'string', description: 'Branch address printed on invoices.' },
@@ -116,13 +119,11 @@ export const saveCompanyConfigSchema = {
         type: 'string',
         maxLength: 4,
         description: 'Branch code (max 4 chars).',
-        example: '001',
       },
       salePointCode: {
         type: 'string',
         maxLength: 4,
         description: 'Point-of-sale code (max 4 chars).',
-        example: '001',
       },
       specialTaxpayerResolution: {
         type: 'string',
@@ -153,6 +154,12 @@ export const saveCompanyConfigSchema = {
         minimum: 1,
         description:
           'Seed value for the invoice sequence counter. Optional — preserves the existing counter if omitted.',
+      },
+      signingCertId: {
+        type: 'string',
+        format: 'uuid',
+        description:
+          'UUID of the signing certificate. Use the `id` returned by POST /api/certificates/upload.',
       },
     },
   },

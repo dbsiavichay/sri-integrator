@@ -147,7 +147,6 @@ The service acts as both producer and consumer on the `invoices` topic to implem
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `SIGNING_P12_ID` | Yes | UUID of the signing certificate stored in DynamoDB |
 | `SIGNING_P12_PASSWORD` | Yes | Password for the `.p12` certificate |
 | `AWS_ACCESS_KEY_ID` | Yes | AWS credentials |
 | `AWS_SECRET_ACCESS_KEY` | Yes | AWS credentials |
@@ -202,7 +201,6 @@ Set via `CompanyConfig.environment`:
    AWS_SECRET_ACCESS_KEY=test
    AWS_ACCESS_KEY_ID=test
    AWS_REGION=us-east-1
-   SIGNING_P12_ID=<uuid-of-uploaded-certificate>
    SIGNING_P12_PASSWORD=<p12-password>
    ```
 
@@ -236,10 +234,10 @@ Before processing invoices, bootstrap the service via the REST API:
    curl -X POST http://localhost:3173/api/certificates \
      -F "file=@/path/to/certificate.p12" \
      -F "password=your-p12-password"
-   # Copy the returned `id` → use as SIGNING_P12_ID
+   # Copy the returned `id` → use as signingCertId in the next step
    ```
 
-2. **Save company fiscal config**
+2. **Save company fiscal config** (include the certificate `id` from step 1)
 
    ```bash
    curl -X PUT http://localhost:3173/api/company-config \
@@ -254,7 +252,8 @@ Before processing invoices, bootstrap the service via the REST API:
        "salePointCode": "001",
        "accountingRequired": false,
        "environment": 1,
-       "emissionType": 1
+       "emissionType": 1,
+       "signingCertId": "<uuid-from-step-1>"
      }'
    ```
 

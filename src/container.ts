@@ -104,7 +104,7 @@ export async function createContainer(config: AppConfig) {
     certificateRepository,
     s3Storage,
     xadesSigner,
-    config.signing.p12Id,
+    companyConfigRepository,
     config.signing.p12Password,
   );
   const sriValidationAdapter = new SriValidationAdapter(validationClient);
@@ -128,11 +128,7 @@ export async function createContainer(config: AppConfig) {
     [InvoiceStatus.SENT, authorizeInvoiceCommand],
   ]);
 
-  const createInvoiceCommand = new CreateInvoiceCommand(
-    companyConfigRepository,
-    invoiceRepository,
-    config.signing.p12Id,
-  );
+  const createInvoiceCommand = new CreateInvoiceCommand(companyConfigRepository, invoiceRepository);
 
   // Handlers
   const invoiceEventHandler = new InvoiceEventHandler(
