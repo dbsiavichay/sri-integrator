@@ -25,7 +25,7 @@ export async function createHttpServer(config: HttpServerConfig): Promise<Fastif
       info: {
         title: config.serviceName,
         version: config.serviceVersion,
-        description: 'SRI Integrator API',
+        description: 'Faclab Invoicing API',
       },
     },
     transform: ({ schema, url, ...rest }) => {
