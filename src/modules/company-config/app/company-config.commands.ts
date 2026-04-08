@@ -15,6 +15,7 @@ export interface SaveCompanyConfigInput {
   environment: Environment;
   emissionType: EmissionType;
   invoiceSequence?: number;
+  signingCertId?: string | null;
 }
 
 export class SaveCompanyConfigCommand {

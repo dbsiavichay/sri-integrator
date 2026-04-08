@@ -25,6 +25,7 @@ export class CompanyConfig {
     public readonly environment: Environment,
     public readonly emissionType: EmissionType,
     public readonly invoiceSequence: number,
+    public readonly signingCertId: string | null,
     public readonly updatedAt: Date,
   ) {}
 
@@ -42,6 +43,7 @@ export class CompanyConfig {
     environment: Environment;
     emissionType: EmissionType;
     invoiceSequence?: number;
+    signingCertId?: string | null;
   }): CompanyConfig {
     return new CompanyConfig(
       CompanyConfig.SINGLETON_ID,
@@ -58,6 +60,7 @@ export class CompanyConfig {
       props.environment,
       props.emissionType,
       props.invoiceSequence ?? 1,
+      props.signingCertId ?? null,
       new Date(),
     );
   }
