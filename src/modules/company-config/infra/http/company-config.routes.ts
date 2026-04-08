@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 
+import { BadRequestError, NotFoundError } from '#/shared/errors/app-error';
 import { logger } from '#/shared/logger';
 
 import {
@@ -24,11 +25,11 @@ export function registerCompanyConfigRoutes(
     try {
       const config = await handlers.save.execute(request.body as SaveCompanyConfigInput);
       logger.info('Company config saved');
-      return reply.status(200).send(toResponse(config));
+      return reply.success(toResponse(config));
     } catch (error) {
       logger.error({ error }, 'Failed to save company config');
       const message = error instanceof Error ? error.message : 'Unknown error';
-      return reply.status(400).send({ error: message });
+      throw new BadRequestError(message);
     }
   });
 
@@ -36,8 +37,8 @@ export function registerCompanyConfigRoutes(
   app.get('/api/company-config', { schema: getCompanyConfigSchema }, async (_request, reply) => {
     const config = await handlers.get.execute();
     if (!config) {
-      return reply.status(404).send({ error: 'Company config not found' });
+      throw new NotFoundError('Company config not found');
     }
-    return toResponse(config);
+    return reply.success(toResponse(config));
   });
 }
