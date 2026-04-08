@@ -1,3 +1,5 @@
+import { errorResponseSchema, successSchema } from '#/shared/infra/http/shared-schemas';
+
 const certificateResponseProperties = {
   id: {
     type: 'string',
@@ -47,9 +49,9 @@ const certificateResponseProperties = {
   },
 } as const;
 
-const errorResponse = {
+const certificateObjectSchema = {
   type: 'object',
-  properties: { error: { type: 'string' } },
+  properties: certificateResponseProperties,
 } as const;
 
 export const uploadCertificateSchema = {
@@ -75,16 +77,15 @@ export const uploadCertificateSchema = {
   },
   response: {
     201: {
-      type: 'object',
+      ...successSchema(certificateObjectSchema),
       description: 'Certificate uploaded and parsed successfully.',
-      properties: certificateResponseProperties,
     },
     400: {
-      ...errorResponse,
+      ...errorResponseSchema,
       description: 'Missing file, wrong file extension, or invalid request.',
     },
     422: {
-      ...errorResponse,
+      ...errorResponseSchema,
       description: 'File could not be parsed — wrong password or corrupted .p12.',
     },
   },
@@ -95,13 +96,7 @@ export const listCertificatesSchema = {
   summary: 'List all certificates',
   description: 'Returns all certificates stored in the system.',
   response: {
-    200: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: certificateResponseProperties,
-      },
-    },
+    200: successSchema({ type: 'array', items: certificateObjectSchema }),
   },
 } as const;
 
@@ -115,11 +110,8 @@ export const getCertificateSchema = {
     required: ['id'],
   },
   response: {
-    200: {
-      type: 'object',
-      properties: certificateResponseProperties,
-    },
-    404: { ...errorResponse, description: 'No certificate found with the given ID.' },
+    200: successSchema(certificateObjectSchema),
+    404: { ...errorResponseSchema, description: 'No certificate found with the given ID.' },
   },
 } as const;
 
@@ -135,6 +127,6 @@ export const deleteCertificateSchema = {
   },
   response: {
     204: { type: 'null', description: 'Certificate deleted successfully.' },
-    404: { ...errorResponse, description: 'No certificate found with the given ID.' },
+    404: { ...errorResponseSchema, description: 'No certificate found with the given ID.' },
   },
 } as const;

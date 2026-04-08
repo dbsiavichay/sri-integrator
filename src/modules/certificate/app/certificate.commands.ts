@@ -1,3 +1,5 @@
+import { NotFoundError } from '#/shared/errors/app-error';
+
 import { Certificate } from '../domain/certificate';
 import { FileStoragePort, P12ParserPort } from '../domain/ports';
 import { CertificateRepository } from '../domain/repository';
@@ -61,7 +63,7 @@ export class DeleteCertificateCommand {
   async execute(id: string): Promise<void> {
     const certificate = await this.certificateRepository.findById(id);
     if (!certificate) {
-      throw new Error(`Certificate with id ${id} not found`);
+      throw new NotFoundError(`Certificate with id ${id} not found`);
     }
 
     await this.fileStorage.delete(certificate.s3Key);

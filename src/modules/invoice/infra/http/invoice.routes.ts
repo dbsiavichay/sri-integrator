@@ -1,5 +1,7 @@
 import { FastifyInstance } from 'fastify';
 
+import { NotFoundError } from '#/shared/errors/app-error';
+
 import { GetInvoiceQuery, ListInvoicesQuery } from '../../app/queries/invoice.queries';
 import { toDetailResponse, toSummaryResponse } from './invoice.mapper';
 import { getInvoiceSchema, listInvoicesSchema } from './invoice.schemas';
@@ -11,9 +13,9 @@ export interface InvoiceQueries {
 
 export function registerInvoiceRoutes(app: FastifyInstance, queries: InvoiceQueries): void {
   // GET /api/invoices — list all
-  app.get('/api/invoices', { schema: listInvoicesSchema }, async () => {
+  app.get('/api/invoices', { schema: listInvoicesSchema }, async (_request, reply) => {
     const invoices = await queries.list.execute();
-    return invoices.map(toSummaryResponse);
+    return reply.success(invoices.map(toSummaryResponse));
   });
 
   // GET /api/invoices/:id — get by ID
@@ -23,9 +25,9 @@ export function registerInvoiceRoutes(app: FastifyInstance, queries: InvoiceQuer
     async (request, reply) => {
       const invoice = await queries.get.execute(request.params.id);
       if (!invoice) {
-        return reply.status(404).send({ error: 'Invoice not found' });
+        throw new NotFoundError('Invoice not found');
       }
-      return toDetailResponse(invoice);
+      return reply.success(toDetailResponse(invoice));
     },
   );
 }

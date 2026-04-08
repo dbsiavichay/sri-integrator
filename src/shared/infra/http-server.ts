@@ -1,9 +1,11 @@
 import fastifyMultipart from '@fastify/multipart';
 import fastifySwagger from '@fastify/swagger';
 import scalarFastify from '@scalar/fastify-api-reference';
+import { randomUUID } from 'crypto';
 import Fastify, { FastifyInstance } from 'fastify';
 
 import { logger } from '../logger';
+import responsePlugin from './http/response.plugin';
 
 export interface HttpServerConfig {
   port: number;
@@ -13,7 +15,12 @@ export interface HttpServerConfig {
 }
 
 export async function createHttpServer(config: HttpServerConfig): Promise<FastifyInstance> {
-  const app = Fastify({ loggerInstance: logger });
+  const app = Fastify({
+    loggerInstance: logger,
+    genReqId: (req) => (req.headers['x-request-id'] as string) ?? randomUUID(),
+  });
+
+  await app.register(responsePlugin);
 
   await app.register(fastifyMultipart, {
     limits: { fileSize: 10 * 1024 * 1024 },

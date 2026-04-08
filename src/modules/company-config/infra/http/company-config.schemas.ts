@@ -1,3 +1,5 @@
+import { errorResponseSchema, successSchema } from '#/shared/infra/http/shared-schemas';
+
 const companyConfigResponseProperties = {
   taxId: {
     type: 'string',
@@ -73,9 +75,9 @@ const companyConfigResponseProperties = {
   },
 } as const;
 
-const errorResponse = {
+const companyConfigObjectSchema = {
   type: 'object',
-  properties: { error: { type: 'string' } },
+  properties: companyConfigResponseProperties,
 } as const;
 
 export const saveCompanyConfigSchema = {
@@ -165,11 +167,10 @@ export const saveCompanyConfigSchema = {
   },
   response: {
     200: {
-      type: 'object',
+      ...successSchema(companyConfigObjectSchema),
       description: 'Configuration saved successfully.',
-      properties: companyConfigResponseProperties,
     },
-    400: { ...errorResponse, description: 'Validation error or missing required fields.' },
+    400: { ...errorResponseSchema, description: 'Validation error or missing required fields.' },
   },
 } as const;
 
@@ -178,10 +179,7 @@ export const getCompanyConfigSchema = {
   summary: 'Get the company fiscal configuration',
   description: 'Returns the current singleton company configuration.',
   response: {
-    200: {
-      type: 'object',
-      properties: companyConfigResponseProperties,
-    },
-    404: { ...errorResponse, description: 'No company configuration has been saved yet.' },
+    200: successSchema(companyConfigObjectSchema),
+    404: { ...errorResponseSchema, description: 'No company configuration has been saved yet.' },
   },
 } as const;

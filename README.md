@@ -8,6 +8,7 @@ Event-driven microservice that integrates with Ecuador's **SRI** (Servicio de Re
 - [Invoice Lifecycle](#invoice-lifecycle)
 - [Modules](#modules)
 - [HTTP API](#http-api)
+- [API Response Format](#api-response-format)
 - [Kafka Topics](#kafka-topics)
 - [Configuration](#configuration)
 - [Local Development](#local-development)
@@ -127,6 +128,61 @@ Interactive docs available at `http://localhost:3173/docs` (Scalar UI) when the 
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/health` | Service health check |
+
+---
+
+## API Response Format
+
+All endpoints return a consistent JSON envelope.
+
+### Success
+
+```json
+{
+  "data": { } ,
+  "meta": {
+    "requestId": "73e47c92-cfa9-49a6-86c5-c027a0adb6ae",
+    "timestamp": "2026-04-08T14:31:02.563Z"
+  }
+}
+```
+
+`data` can be an object (single resource) or an array (collection). `meta` is always present.
+
+### Error
+
+```json
+{
+  "errors": [
+    {
+      "code": "NOT_FOUND",
+      "message": "Invoice not found"
+    }
+  ],
+  "meta": {
+    "requestId": "73e47c92-cfa9-49a6-86c5-c027a0adb6ae",
+    "timestamp": "2026-04-08T14:31:02.563Z"
+  }
+}
+```
+
+#### Error codes
+
+| Code | HTTP status | When |
+|------|-------------|------|
+| `NOT_FOUND` | 404 | Resource does not exist |
+| `BAD_REQUEST` | 400 | Invalid input (missing file, wrong extension, etc.) |
+| `VALIDATION_ERROR` | 422 | Request body fails schema validation |
+| `INTERNAL_ERROR` | 500 | Unexpected server error |
+
+### Request ID propagation
+
+Every response includes a `requestId` in `meta`. If the request carries an `X-Request-ID` header, that value is used as-is (useful for distributed tracing). Otherwise a UUID v4 is generated automatically.
+
+```bash
+curl -H "X-Request-ID: my-trace-id" http://localhost:3173/api/invoices
+# → meta.requestId will be "my-trace-id"
+```
 
 ---
 

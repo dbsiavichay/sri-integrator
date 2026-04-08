@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 
+import { BadRequestError, NotFoundError, ValidationError } from '#/shared/errors/app-error';
 import { logger } from '#/shared/logger';
 
 import {
@@ -31,11 +32,11 @@ export function registerCertificateRoutes(
   app.post('/api/certificates', { schema: uploadCertificateSchema }, async (request, reply) => {
     const data = await request.file();
     if (!data) {
-      return reply.status(400).send({ error: 'No file uploaded' });
+      throw new BadRequestError('No file uploaded');
     }
 
     if (!data.filename.endsWith('.p12')) {
-      return reply.status(400).send({ error: 'Only .p12 files are accepted' });
+      throw new BadRequestError('Only .p12 files are accepted');
     }
 
     const chunks: Buffer[] = [];
@@ -56,18 +57,19 @@ export function registerCertificateRoutes(
       });
 
       logger.info({ certificateId: certificate.id }, 'Certificate uploaded');
-      return reply.status(201).send(toResponse(certificate));
+      reply.code(201);
+      return reply.success(toResponse(certificate));
     } catch (error) {
       logger.error({ error }, 'Failed to upload certificate');
       const message = error instanceof Error ? error.message : 'Unknown error';
-      return reply.status(422).send({ error: message });
+      throw new ValidationError(message);
     }
   });
 
   // GET /api/certificates — list all
-  app.get('/api/certificates', { schema: listCertificatesSchema }, async () => {
+  app.get('/api/certificates', { schema: listCertificatesSchema }, async (_request, reply) => {
     const certificates = await commands.list.execute();
-    return certificates.map(toResponse);
+    return reply.success(certificates.map(toResponse));
   });
 
   // GET /api/certificates/:id — get by ID
@@ -77,9 +79,9 @@ export function registerCertificateRoutes(
     async (request, reply) => {
       const certificate = await commands.get.execute(request.params.id);
       if (!certificate) {
-        return reply.status(404).send({ error: 'Certificate not found' });
+        throw new NotFoundError('Certificate not found');
       }
-      return toResponse(certificate);
+      return reply.success(toResponse(certificate));
     },
   );
 
@@ -88,14 +90,8 @@ export function registerCertificateRoutes(
     '/api/certificates/:id',
     { schema: deleteCertificateSchema },
     async (request, reply) => {
-      try {
-        await commands.delete.execute(request.params.id);
-        return reply.status(204).send();
-      } catch (error) {
-        logger.error({ error }, 'Failed to delete certificate');
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        return reply.status(404).send({ error: message });
-      }
+      await commands.delete.execute(request.params.id);
+      return reply.code(204).send();
     },
   );
 }

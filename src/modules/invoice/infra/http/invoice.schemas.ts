@@ -1,3 +1,5 @@
+import { errorResponseSchema, successSchema } from '#/shared/infra/http/shared-schemas';
+
 const statusHistorySchema = {
   type: 'object',
   description: 'A single status transition recorded on the invoice audit trail.',
@@ -54,19 +56,23 @@ const invoiceDetailProperties = {
   },
 } as const;
 
+const invoiceSummaryObjectSchema = {
+  type: 'object',
+  properties: invoiceSummaryProperties,
+} as const;
+
+const invoiceDetailObjectSchema = {
+  type: 'object',
+  properties: invoiceDetailProperties,
+} as const;
+
 export const listInvoicesSchema = {
   tags: ['Invoices'],
   summary: 'List all invoices',
   description:
     'Returns a summary list of all invoices stored in the system, ordered by creation time. The XML body is omitted from list responses for performance.',
   response: {
-    200: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: invoiceSummaryProperties,
-      },
-    },
+    200: successSchema({ type: 'array', items: invoiceSummaryObjectSchema }),
   },
 } as const;
 
@@ -80,14 +86,7 @@ export const getInvoiceSchema = {
     required: ['id'],
   },
   response: {
-    200: {
-      type: 'object',
-      properties: invoiceDetailProperties,
-    },
-    404: {
-      type: 'object',
-      description: 'No invoice found with the given ID.',
-      properties: { error: { type: 'string', example: 'Invoice not found' } },
-    },
+    200: successSchema(invoiceDetailObjectSchema),
+    404: { ...errorResponseSchema, description: 'No invoice found with the given ID.' },
   },
 } as const;
