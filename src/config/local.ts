@@ -9,6 +9,7 @@ export default {
   http: {
     port: 3173,
     host: '0.0.0.0',
+    corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:5173').split(','),
   },
   externalServices: {
     sriVoucherWsdl:

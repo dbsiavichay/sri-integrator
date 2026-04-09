@@ -170,6 +170,7 @@ export async function createContainer(config: AppConfig) {
   const httpServer = await createHttpServer({
     port: config.http.port,
     host: config.http.host,
+    corsOrigins: config.http.corsOrigins,
     serviceName: config.serviceName,
     serviceVersion: config.serviceVersion,
   });
