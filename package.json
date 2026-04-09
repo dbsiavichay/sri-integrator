@@ -21,6 +21,7 @@
     "@aws-sdk/lib-dynamodb": "^3.1014.0",
     "@aws-sdk/util-dynamodb": "^3.996.2",
     "@confluentinc/kafka-javascript": "^1.8.0",
+    "@fastify/cors": "^11.2.0",
     "@fastify/multipart": "^9.4.0",
     "@fastify/swagger": "^9.7.0",
     "@scalar/fastify-api-reference": "^1.49.3",

@@ -1,3 +1,4 @@
+import fastifyCors from '@fastify/cors';
 import fastifyMultipart from '@fastify/multipart';
 import fastifySwagger from '@fastify/swagger';
 import scalarFastify from '@scalar/fastify-api-reference';
@@ -10,6 +11,7 @@ import responsePlugin from './http/response.plugin';
 export interface HttpServerConfig {
   port: number;
   host: string;
+  corsOrigins: string[];
   serviceName: string;
   serviceVersion: string;
 }
@@ -18,6 +20,11 @@ export async function createHttpServer(config: HttpServerConfig): Promise<Fastif
   const app = Fastify({
     loggerInstance: logger,
     genReqId: (req) => (req.headers['x-request-id'] as string) ?? randomUUID(),
+  });
+
+  await app.register(fastifyCors, {
+    origin: config.corsOrigins,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
   await app.register(responsePlugin);

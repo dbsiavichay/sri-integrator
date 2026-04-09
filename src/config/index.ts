@@ -7,6 +7,7 @@ export interface AppConfig {
   http: {
     port: number;
     host: string;
+    corsOrigins: string[];
   };
   externalServices: {
     sriVoucherWsdl: string;
