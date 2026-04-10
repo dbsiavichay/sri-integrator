@@ -1,8 +1,10 @@
 import { KafkaJS } from '@confluentinc/kafka-javascript';
+import { context, propagation, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
 
 import { BadRequestError, ValidationError } from '../errors/app-error';
 import { NonRetryableError } from '../errors/non-retryable.error';
 import { logger } from '../logger';
+import { kafkaMessageCount, kafkaMessageDuration, kafkaRetryCount } from '../telemetry/metrics';
 import { DlqMessageContext, DlqProducer } from './dlq-producer';
 
 export interface RetryConfig {
@@ -29,6 +31,8 @@ function calculateBackoff(attempt: number, baseDelayMs: number): number {
   return delay * jitter;
 }
 
+const tracer = trace.getTracer('faclab-invoicing.kafka');
+
 export abstract class BaseKafkaConsumer {
   private retryConfig: RetryConfig;
 
@@ -52,31 +56,72 @@ export abstract class BaseKafkaConsumer {
         if (!message.value) return;
 
         const value = message.value.toString();
-        logger.debug(
+
+        const headers: Record<string, string> = {};
+        if (message.headers) {
+          for (const [k, v] of Object.entries(message.headers)) {
+            if (v) headers[k] = Buffer.isBuffer(v) ? v.toString() : String(v);
+          }
+        }
+        const parentContext = propagation.extract(context.active(), headers);
+
+        const span = tracer.startSpan(
+          `${topic} process`,
           {
-            topic,
-            partition,
-            offset: message.offset,
-            key: message.key?.toString(),
-            size: value.length,
+            kind: SpanKind.CONSUMER,
+            attributes: {
+              'messaging.system': 'kafka',
+              'messaging.operation.type': 'process',
+              'messaging.destination.name': topic,
+              'messaging.kafka.destination.partition': partition,
+              'messaging.kafka.message.offset': message.offset,
+            },
           },
-          'Kafka message received',
+          parentContext,
         );
 
-        const dlqContext: DlqMessageContext = {
-          topic,
-          partition,
-          offset: message.offset,
-          key: message.key?.toString() ?? null,
-          value,
-          timestamp: message.timestamp ?? null,
-        };
+        const startTime = performance.now();
 
-        await this.processWithRetry(topic, value, dlqContext);
+        await context.with(trace.setSpan(parentContext, span), async () => {
+          try {
+            logger.debug(
+              {
+                topic,
+                partition,
+                offset: message.offset,
+                key: message.key?.toString(),
+                size: value.length,
+              },
+              'Kafka message received',
+            );
 
-        await this.consumer.commitOffsets([
-          { topic, partition, offset: (BigInt(message.offset) + 1n).toString() },
-        ]);
+            const dlqContext: DlqMessageContext = {
+              topic,
+              partition,
+              offset: message.offset,
+              key: message.key?.toString() ?? null,
+              value,
+              timestamp: message.timestamp ?? null,
+            };
+
+            await this.processWithRetry(topic, value, dlqContext);
+
+            await this.consumer.commitOffsets([
+              { topic, partition, offset: (BigInt(message.offset) + 1n).toString() },
+            ]);
+
+            kafkaMessageCount.add(1, { topic, status: 'success' });
+          } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error));
+            span.setStatus({ code: SpanStatusCode.ERROR, message: err.message });
+            span.recordException(err);
+            kafkaMessageCount.add(1, { topic, status: 'error' });
+            throw error;
+          } finally {
+            kafkaMessageDuration.record(performance.now() - startTime, { topic });
+            span.end();
+          }
+        });
       },
     });
   }
@@ -105,6 +150,7 @@ export abstract class BaseKafkaConsumer {
         }
 
         if (attempt < maxRetries) {
+          kafkaRetryCount.add(1, { topic, attempt: attempt + 1 });
           const backoff = calculateBackoff(attempt, baseDelayMs);
           logger.warn(
             { topic, offset: dlqContext.offset, err, attempt: attempt + 1, maxRetries, backoff },
