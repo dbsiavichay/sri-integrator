@@ -1,5 +1,6 @@
 import fastifyCors from '@fastify/cors';
 import fastifyMultipart from '@fastify/multipart';
+import { FastifyOtelInstrumentation } from '@fastify/otel';
 import fastifySwagger from '@fastify/swagger';
 import scalarFastify from '@scalar/fastify-api-reference';
 import { randomUUID } from 'crypto';
@@ -21,6 +22,9 @@ export async function createHttpServer(config: HttpServerConfig): Promise<Fastif
     loggerInstance: logger,
     genReqId: (req) => (req.headers['x-request-id'] as string) ?? randomUUID(),
   });
+
+  const otelPlugin = new FastifyOtelInstrumentation().plugin();
+  await app.register(otelPlugin);
 
   await app.register(fastifyCors, {
     origin: config.corsOrigins,
