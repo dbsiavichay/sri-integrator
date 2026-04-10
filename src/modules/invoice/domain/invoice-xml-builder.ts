@@ -47,12 +47,13 @@ export function buildInvoiceXml(input: InvoiceXmlInput): string {
 }
 
 function formatDate(d: Date): string {
+  const utcMinus5 = new Date(d.getTime() - 5 * 60 * 60 * 1000);
   return (
-    String(d.getDate()).padStart(2, '0') +
+    String(utcMinus5.getUTCDate()).padStart(2, '0') +
     '/' +
-    String(d.getMonth() + 1).padStart(2, '0') +
+    String(utcMinus5.getUTCMonth() + 1).padStart(2, '0') +
     '/' +
-    String(d.getFullYear())
+    String(utcMinus5.getUTCFullYear())
   );
 }
 

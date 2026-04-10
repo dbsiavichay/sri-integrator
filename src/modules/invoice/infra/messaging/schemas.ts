@@ -56,7 +56,7 @@ export const SaleConfirmedMessageSchema = z.object({
   event_id: z.string().uuid(),
   event_type: z.literal('SaleConfirmed'),
   aggregate_id: z.number(),
-  occurred_at: z.string(),
+  occurred_at: z.string().transform((s) => new Date(s.endsWith('Z') ? s : s + 'Z')),
   payload: SaleConfirmedPayloadSchema,
 });
 
