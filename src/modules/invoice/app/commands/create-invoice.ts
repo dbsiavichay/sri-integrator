@@ -22,7 +22,7 @@ export class CreateInvoiceCommand {
     if (!companyConfig.signingCertId)
       throw new Error('No signing certificate configured in company config');
 
-    const date = new Date(message.occurred_at);
+    const date = message.occurred_at;
     const { payload } = message;
 
     const sequenceNum = await this.companyConfigRepository.nextInvoiceSequence();

@@ -1,7 +1,7 @@
+import { CreateInvoiceCommand } from '../commands/create-invoice';
 import { InvoiceDomainEvent } from '../../domain/events';
 import { MessageProducer } from '../../domain/ports';
 import { SaleConfirmedMessage } from '../../infra/messaging/schemas';
-import { CreateInvoiceCommand } from '../commands/create-invoice';
 
 export class SaleConfirmedHandler {
   constructor(
