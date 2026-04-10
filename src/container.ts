@@ -46,6 +46,7 @@ import {
 import { KAFKA_TOPICS } from '#/modules/invoice/infra/messaging/topics';
 import { DynamoInvoiceRepository } from '#/modules/invoice/infra/persistence/dynamo-invoice.repository';
 import { XadesSigner } from '#/modules/invoice/infra/signing/xades-signer';
+import { DlqProducer } from '#/shared/infra/dlq-producer';
 import { createHttpServer } from '#/shared/infra/http-server';
 import { SoapClient } from '#/shared/infra/soap-client';
 
@@ -61,6 +62,7 @@ export async function createContainer(config: AppConfig) {
   const consumer = kafka.consumer({
     kafkaJS: {
       groupId: config.kafka.groupId,
+      autoCommit: false,
     },
   });
   const producer = kafka.producer({
@@ -142,6 +144,9 @@ export async function createContainer(config: AppConfig) {
   );
   const saleConfirmedHandler = new SaleConfirmedHandler(createInvoiceCommand, invoiceProducer);
 
+  // DLQ
+  const dlqProducer = new DlqProducer(producer, KAFKA_TOPICS.DLQ, config.kafka.groupId);
+
   // Consumer
   const kafkaConsumer = new InvoiceKafkaConsumer(
     consumer,
@@ -156,6 +161,7 @@ export async function createContainer(config: AppConfig) {
         validator: SaleConfirmedMessageSchema,
       },
     },
+    dlqProducer,
   );
 
   // Certificate module
