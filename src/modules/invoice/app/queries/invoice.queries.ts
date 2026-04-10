@@ -16,3 +16,11 @@ export class ListInvoicesQuery {
     return this.invoiceRepository.findAll();
   }
 }
+
+export class FindInvoicesBySaleIdQuery {
+  constructor(private readonly invoiceRepository: InvoiceRepository) {}
+
+  async execute(saleId: string): Promise<Invoice[]> {
+    return this.invoiceRepository.findBySaleId(saleId);
+  }
+}

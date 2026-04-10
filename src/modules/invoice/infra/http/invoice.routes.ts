@@ -2,13 +2,18 @@ import { FastifyInstance } from 'fastify';
 
 import { NotFoundError } from '#/shared/errors/app-error';
 
-import { GetInvoiceQuery, ListInvoicesQuery } from '../../app/queries/invoice.queries';
+import {
+  FindInvoicesBySaleIdQuery,
+  GetInvoiceQuery,
+  ListInvoicesQuery,
+} from '../../app/queries/invoice.queries';
 import { toDetailResponse, toSummaryResponse } from './invoice.mapper';
-import { getInvoiceSchema, listInvoicesSchema } from './invoice.schemas';
+import { findBySaleIdSchema, getInvoiceSchema, listInvoicesSchema } from './invoice.schemas';
 
 export interface InvoiceQueries {
   get: GetInvoiceQuery;
   list: ListInvoicesQuery;
+  findBySaleId: FindInvoicesBySaleIdQuery;
 }
 
 export function registerInvoiceRoutes(app: FastifyInstance, queries: InvoiceQueries): void {
@@ -17,6 +22,16 @@ export function registerInvoiceRoutes(app: FastifyInstance, queries: InvoiceQuer
     const invoices = await queries.list.execute();
     return reply.success(invoices.map(toSummaryResponse));
   });
+
+  // GET /api/invoices/by-sale/:saleId — find by sale ID
+  app.get<{ Params: { saleId: string } }>(
+    '/api/invoices/by-sale/:saleId',
+    { schema: findBySaleIdSchema },
+    async (request, reply) => {
+      const invoices = await queries.findBySaleId.execute(request.params.saleId);
+      return reply.success(invoices.map(toSummaryResponse));
+    },
+  );
 
   // GET /api/invoices/:id — get by ID
   app.get<{ Params: { id: string } }>(

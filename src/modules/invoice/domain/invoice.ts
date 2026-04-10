@@ -20,7 +20,7 @@ export class Invoice {
 
   constructor(
     public readonly id: string = uuidv4(),
-    public readonly orderId: string,
+    public readonly saleId: string,
     public readonly accessCode: AccessCode,
     status: InvoiceStatus,
     public readonly signatureId: string,
@@ -39,15 +39,10 @@ export class Invoice {
     return this._xml;
   }
 
-  static create(
-    orderId: string,
-    accessCode: AccessCode,
-    signatureId: string,
-    xml: string,
-  ): Invoice {
+  static create(saleId: string, accessCode: AccessCode, signatureId: string, xml: string): Invoice {
     const invoice = new Invoice(
       undefined,
-      orderId,
+      saleId,
       accessCode,
       InvoiceStatus.CREATED,
       signatureId,
@@ -98,7 +93,7 @@ export class Invoice {
     this._domainEvents.push({
       type: STATUS_EVENT_TYPE[status],
       invoiceId: this.id,
-      orderId: this.orderId,
+      saleId: this.saleId,
       status,
       occurredAt: date,
     } as InvoiceDomainEvent);

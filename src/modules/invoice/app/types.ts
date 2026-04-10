@@ -1,7 +1,7 @@
 export interface InvoiceMessageInput {
   type: string;
   invoiceId: string;
-  orderId: string;
+  saleId: string;
   status: string;
   occurredAt: Date;
 }

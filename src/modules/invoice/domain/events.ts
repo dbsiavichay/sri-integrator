@@ -8,7 +8,7 @@ export enum InvoiceStatus {
 
 interface BaseInvoiceEvent {
   invoiceId: string;
-  orderId: string;
+  saleId: string;
   status: InvoiceStatus;
   occurredAt: Date;
 }

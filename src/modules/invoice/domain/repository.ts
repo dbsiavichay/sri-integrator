@@ -5,4 +5,5 @@ export interface InvoiceRepository {
   updateInvoice(invoice: Invoice): Promise<Invoice>;
   getInvoiceById(id: string): Promise<Invoice | null>;
   findAll(): Promise<Invoice[]>;
+  findBySaleId(saleId: string): Promise<Invoice[]>;
 }

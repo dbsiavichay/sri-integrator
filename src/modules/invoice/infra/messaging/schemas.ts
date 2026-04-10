@@ -7,7 +7,7 @@ import { InvoiceStatus } from '../../domain/invoice';
 export const InvoiceMessageSchema = z.object({
   type: z.string(),
   invoiceId: z.string(),
-  orderId: z.string(),
+  saleId: z.string(),
   status: z.nativeEnum(InvoiceStatus),
   occurredAt: z.coerce.date(),
 });

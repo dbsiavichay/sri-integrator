@@ -3,7 +3,7 @@ import { Invoice } from '../../domain/invoice';
 export function toSummaryResponse(invoice: Invoice) {
   return {
     id: invoice.id,
-    orderId: invoice.orderId,
+    saleId: invoice.saleId,
     accessCode: invoice.accessCode.value,
     status: invoice.status,
     signatureId: invoice.signatureId,

@@ -3,7 +3,7 @@ import { Invoice, InvoiceStatus, InvoiceStatusHistory } from '../../domain/invoi
 
 export interface InvoiceRecord {
   id: string;
-  orderId: string;
+  saleId: string;
   accessCode: string;
   status: string;
   signatureId: string;
@@ -18,7 +18,7 @@ export interface InvoiceRecord {
 export function toInvoiceRecord(invoice: Invoice): InvoiceRecord {
   return {
     id: invoice.id,
-    orderId: invoice.orderId,
+    saleId: invoice.saleId,
     accessCode: invoice.accessCode.value,
     status: invoice.status,
     signatureId: invoice.signatureId,
@@ -34,7 +34,7 @@ export function toInvoiceRecord(invoice: Invoice): InvoiceRecord {
 export function fromInvoiceRecord(record: InvoiceRecord): Invoice {
   return new Invoice(
     record.id,
-    record.orderId,
+    record.saleId,
     AccessCode.create(record.accessCode),
     record.status as InvoiceStatus,
     record.signatureId,

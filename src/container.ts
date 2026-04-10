@@ -27,7 +27,11 @@ import { SendInvoiceCommand } from '#/modules/invoice/app/commands/send-invoice'
 import { SignInvoiceCommand } from '#/modules/invoice/app/commands/sign-invoice';
 import { InvoiceEventHandler } from '#/modules/invoice/app/handlers/invoice-event.handler';
 import { SaleConfirmedHandler } from '#/modules/invoice/app/handlers/sale-confirmed.handler';
-import { GetInvoiceQuery, ListInvoicesQuery } from '#/modules/invoice/app/queries/invoice.queries';
+import {
+  FindInvoicesBySaleIdQuery,
+  GetInvoiceQuery,
+  ListInvoicesQuery,
+} from '#/modules/invoice/app/queries/invoice.queries';
 import { InvoiceStatus } from '#/modules/invoice/domain/invoice';
 import { SignerAdapter } from '#/modules/invoice/infra/adapters/signer.adapter';
 import { SriAuthorizationAdapter } from '#/modules/invoice/infra/adapters/sri-authorization.adapter';
@@ -193,10 +197,12 @@ export async function createContainer(config: AppConfig) {
 
   const getInvoiceQuery = new GetInvoiceQuery(invoiceRepository);
   const listInvoicesQuery = new ListInvoicesQuery(invoiceRepository);
+  const findInvoicesBySaleIdQuery = new FindInvoicesBySaleIdQuery(invoiceRepository);
 
   registerInvoiceRoutes(httpServer, {
     get: getInvoiceQuery,
     list: listInvoicesQuery,
+    findBySaleId: findInvoicesBySaleIdQuery,
   });
 
   await invoiceProducer.connect();

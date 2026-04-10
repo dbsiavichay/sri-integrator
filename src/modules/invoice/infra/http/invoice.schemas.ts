@@ -23,7 +23,7 @@ const statusHistorySchema = {
 
 const invoiceSummaryProperties = {
   id: { type: 'string', format: 'uuid', description: 'Unique invoice identifier.' },
-  orderId: { type: 'string', description: 'Identifier of the originating sale order.' },
+  saleId: { type: 'string', description: 'Identifier of the originating sale.' },
   accessCode: {
     type: 'string',
     description:
@@ -71,6 +71,20 @@ export const listInvoicesSchema = {
   summary: 'List all invoices',
   description:
     'Returns a summary list of all invoices stored in the system, ordered by creation time. The XML body is omitted from list responses for performance.',
+  response: {
+    200: successSchema({ type: 'array', items: invoiceSummaryObjectSchema }),
+  },
+} as const;
+
+export const findBySaleIdSchema = {
+  tags: ['Invoices'],
+  summary: 'Find invoices by sale ID',
+  description: 'Returns all invoices associated with the given sale ID.',
+  params: {
+    type: 'object',
+    properties: { saleId: { type: 'string', description: 'Sale ID.' } },
+    required: ['saleId'],
+  },
   response: {
     200: successSchema({ type: 'array', items: invoiceSummaryObjectSchema }),
   },
